@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <\!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#3B82F6" />
+  
+  <\!-- Chat bubble -->
+  <path d="M160 140 h192 a40 40 0 0 1 40 40 v120 a40 40 0 0 1 -40 40 h-120 l-60 60 v-60 h-12 a40 40 0 0 1 -40 -40 v-120 a40 40 0 0 1 40 -40" fill="white" />
+  
+  <\!-- Letter C for Claude -->
+  <text x="256" y="280" font-family="Arial, sans-serif" font-size="140" font-weight="bold" text-anchor="middle" fill="#3B82F6">C</text>
+</svg>
