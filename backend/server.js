@@ -650,21 +650,46 @@ io.on('connection', (socket) => {
             console.log('Tool usage:', msg.type, msg.name || msg.tool_use_id);
           } else if (msg.type === 'assistant' && msg.message) {
             // Handle assistant messages that come without result field
-            const messageContent = typeof msg.message === 'string' ? msg.message : JSON.stringify(msg.message);
-            assistantResponse = messageContent;
-            console.log('📝 [TRACE] Got assistant message:', {
-              messageType: typeof msg.message,
-              messageLength: messageContent.length,
-              preview: messageContent.substring(0, 100) + '...',
-              sessionId: currentSessionId
-            });
+            let messageContent = '';
             
-            // Emit streaming for assistant messages too
-            socket.emit('message_stream', {
-              sessionId: currentSessionId,
-              content: messageContent,
-              fullContent: messageContent
-            });
+            if (typeof msg.message === 'string') {
+              messageContent = msg.message;
+            } else if (msg.message && typeof msg.message === 'object') {
+              // Extract content from object - try common fields
+              if (msg.message.content) {
+                messageContent = msg.message.content;
+              } else if (msg.message.text) {
+                messageContent = msg.message.text;
+              } else if (msg.message.message) {
+                messageContent = msg.message.message;
+              } else {
+                // Skip tool_use messages or messages without readable content
+                console.log('📝 [TRACE] Skipping non-text assistant message:', {
+                  messageType: msg.message.type || 'unknown',
+                  hasContent: !!msg.message.content,
+                  sessionId: currentSessionId
+                });
+                // Don't set assistantResponse for tool messages
+                continue;
+              }
+            }
+            
+            if (messageContent) {
+              assistantResponse = messageContent;
+              console.log('📝 [TRACE] Got assistant message:', {
+                messageType: typeof msg.message,
+                messageLength: messageContent.length,
+                preview: messageContent.substring(0, 100) + '...',
+                sessionId: currentSessionId
+              });
+              
+              // Emit streaming for assistant messages too
+              socket.emit('message_stream', {
+                sessionId: currentSessionId,
+                content: messageContent,
+                fullContent: messageContent
+              });
+            }
           }
         }
         
@@ -678,6 +703,30 @@ io.on('connection', (socket) => {
         });
         
         socket.emit('typing_end');
+        
+        // Validate response before sending
+        if (!assistantResponse || assistantResponse.trim() === '') {
+          console.log('⚠️ [TRACE] Empty assistant response detected, using fallback');
+          assistantResponse = "Desculpe, não consegui processar sua solicitação corretamente. Por favor, tente novamente.";
+        }
+        
+        // Check if response looks like raw JSON (common issue)
+        if (assistantResponse.startsWith('{"') && assistantResponse.includes('"type":')) {
+          console.log('⚠️ [TRACE] Raw JSON detected in response, attempting to parse');
+          try {
+            const parsed = JSON.parse(assistantResponse);
+            if (parsed.content) {
+              assistantResponse = parsed.content;
+            } else if (parsed.message) {
+              assistantResponse = parsed.message;
+            } else {
+              assistantResponse = "Desculpe, recebi uma resposta em formato incorreto. Por favor, tente novamente.";
+            }
+          } catch (e) {
+            console.log('❌ [TRACE] Failed to parse JSON response');
+            assistantResponse = "Desculpe, houve um erro ao processar a resposta. Por favor, tente novamente.";
+          }
+        }
         
         // Create assistant message
         const assistantMessage = {
