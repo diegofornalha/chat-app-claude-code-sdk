@@ -416,6 +416,8 @@ const MarkdownComponents = {
 
 export default function ClaudeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
+  const [minimizedMessages, setMinimizedMessages] = useState<Set<string>>(new Set());
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
@@ -592,6 +594,50 @@ export default function ClaudeChat() {
         setSessionId(session.id);
       }
     });
+    
+    // Adicionar listener para sessões deletadas
+    newSocket.on('session_deleted', (data: { success: boolean; sessionId: string; remainingSessions?: number; timestamp?: number }) => {
+      console.log('🗑️ [SESSIONS] Session deleted event received:', {
+        success: data.success,
+        sessionId: data.sessionId?.slice(0, 8),
+        remainingSessions: data.remainingSessions,
+        timestamp: data.timestamp
+      });
+      
+      if (data.success) {
+        // Recarregar a lista de sessões do servidor para garantir sincronização
+        loadSessions();
+        
+        // Se a sessão deletada era a atual, limpar a interface
+        if (sessionId === data.sessionId) {
+          setSessionId('');
+          setMessages([]);
+        }
+      }
+    });
+    
+    // Listener para atualizações da lista de sessões (broadcast para todos os clientes)
+    newSocket.on('session_list_updated', (data: { action: string; sessionId: string; remainingSessions: number; timestamp: number }) => {
+      console.log('📋 [SESSIONS] Session list update received:', {
+        action: data.action,
+        sessionId: data.sessionId?.slice(0, 8),
+        remainingSessions: data.remainingSessions,
+        timestamp: data.timestamp
+      });
+      
+      if (data.action === 'session_deleted') {
+        // Recarregar a lista de sessões para todos os clientes
+        setTimeout(() => {
+          loadSessions();
+        }, 100); // Pequeno delay para garantir que o servidor processou a exclusão
+        
+        // Se a sessão deletada era a atual, limpar a interface
+        if (sessionId === data.sessionId) {
+          setSessionId('');
+          setMessages([]);
+        }
+      }
+    });
 
     newSocket.on('processing_step', (step: ProcessingStep) => {
       console.log('🔄 [TRACE] Received processing step:', step);
@@ -691,11 +737,34 @@ export default function ClaudeChat() {
 
   const loadSessions = async () => {
     try {
-      const response = await fetch(`${API_BASE}/sessions`);
+      console.log('📋 [SESSIONS] Loading sessions from server...');
+      
+      // Adicionar cache-busting com timestamp
+      const cacheBust = `?t=${Date.now()}&r=${Math.random().toString(36).substr(2, 9)}`;
+      const response = await fetch(`${API_BASE}/sessions${cacheBust}`, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
-      setSessions(data.sessions || []);
+      const sessions = data.sessions || [];
+      
+      console.log('📋 [SESSIONS] Loaded sessions:', {
+        count: sessions.length,
+        sessionIds: sessions.map((s: any) => s.id.slice(0, 8)),
+        timestamp: data.timestamp
+      });
+      
+      setSessions(sessions);
     } catch (error) {
-      console.error('Failed to load sessions:', error);
+      console.error('📋 [SESSIONS] Failed to load sessions:', error);
     }
   };
 
@@ -989,9 +1058,18 @@ export default function ClaudeChat() {
 
   useEffect(() => {
     if (showSidebar) {
+      console.log('📋 [SESSIONS] Sidebar opened, loading sessions...');
       loadSessions();
     }
   }, [showSidebar]);
+  
+  // Recarregar sessões quando o socket se conecta
+  useEffect(() => {
+    if (connected && socket) {
+      console.log('📋 [SESSIONS] Socket connected, loading initial sessions...');
+      loadSessions();
+    }
+  }, [connected, socket]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: colors.background }}>
@@ -1114,11 +1192,63 @@ export default function ClaudeChat() {
                     }}
                     onClick={() => loadSession(session)}
                   >
-                    <div className="font-medium text-sm truncate">
-                      {session.title}
-                    </div>
-                    <div className="text-xs mt-1" style={{ color: colors.textTertiary }}>
-                      {session.messageCount} messages • {formatTimestamp(session.lastActivity)}
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">
+                          {session.title}
+                        </div>
+                        <div className="text-xs mt-1" style={{ color: colors.textTertiary }}>
+                          {session.messageCount} messages • {formatTimestamp(session.lastActivity)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Previne que o clique selecione a sessão
+                          
+                          console.log('🗑️ [SESSIONS] Delete button clicked for session:', session.id.slice(0, 8));
+                          
+                          if (socket) {
+                            // Emitir evento de deleção para o servidor
+                            socket.emit('delete_session', session.id);
+                            
+                            // Remover da lista local imediatamente para UI responsíva
+                            setSessions(prev => {
+                              const filtered = prev.filter(s => s.id !== session.id);
+                              console.log('🗑️ [SESSIONS] Local sessions updated:', {
+                                before: prev.length,
+                                after: filtered.length,
+                                removedId: session.id.slice(0, 8)
+                              });
+                              return filtered;
+                            });
+                            
+                            // Se era a sessão ativa, limpar a interface
+                            if (sessionId === session.id) {
+                              console.log('🗑️ [SESSIONS] Clearing active session interface');
+                              setSessionId('');
+                              setMessages([]);
+                            }
+                          } else {
+                            console.error('🗑️ [SESSIONS] No socket connection available for deletion');
+                          }
+                        }}
+                        className="ml-2 p-1 rounded hover:bg-red-100 transition-colors"
+                        style={{
+                          color: colors.textTertiary,
+                          backgroundColor: 'transparent',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = colors.errorLight;
+                          e.currentTarget.style.color = colors.error;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = colors.textTertiary;
+                        }}
+                        title="Apagar conversa"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -1375,16 +1505,105 @@ export default function ClaudeChat() {
                     : `0 1px 3px ${colors.overlayLight}`
                 }}
               >
-                {message.type === 'assistant' ? (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={MarkdownComponents}
+                {/* Header com botão minimizar/expandir para TODAS as mensagens */}
+                <div className="flex items-center justify-between mb-2">
+                  <button
+                    onClick={() => {
+                      const newMinimized = new Set(minimizedMessages);
+                      if (newMinimized.has(message.id)) {
+                        newMinimized.delete(message.id);
+                      } else {
+                        newMinimized.add(message.id);
+                      }
+                      setMinimizedMessages(newMinimized);
+                    }}
+                    className="flex items-center space-x-2 text-sm font-medium cursor-pointer hover:opacity-70 transition-all duration-200"
+                    style={{ color: message.type === 'user' ? colors.surface : colors.textSecondary }}
                   >
-                    {message.content}
-                  </ReactMarkdown>
-                ) : (
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                )}
+                    <span style={{ 
+                      transform: minimizedMessages.has(message.id) ? 'rotate(0deg)' : 'rotate(90deg)',
+                      transition: 'transform 0.2s ease',
+                      display: 'inline-block'
+                    }}>▶</span>
+                    <span>{message.type === 'user' ? 'Você' : 'Claude'}</span>
+                    {minimizedMessages.has(message.id) && (
+                      <span className="text-xs opacity-75">
+                        ({message.content.substring(0, 50)}...)
+                      </span>
+                    )}
+                  </button>
+                  {message.timestamp && (
+                    <span className="text-xs opacity-60" style={{ 
+                      color: message.type === 'user' ? colors.surface : colors.textTertiary 
+                    }}>
+                      {formatTimestamp(message.timestamp)}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Message content com animação de collapse/expand */}
+                <div style={{
+                  maxHeight: minimizedMessages.has(message.id) ? '0' : '5000px',
+                  overflow: 'hidden',
+                  transition: 'max-height 0.3s ease, opacity 0.3s ease',
+                  opacity: minimizedMessages.has(message.id) ? 0 : 1,
+                  position: 'relative'
+                }}>
+                  {/* Botão adicional para mensagens longas */}
+                  {message.content.length > 500 && !minimizedMessages.has(message.id) && (
+                    <button
+                      onClick={() => {
+                        const newExpanded = new Set(expandedMessages);
+                        if (newExpanded.has(message.id)) {
+                          newExpanded.delete(message.id);
+                        } else {
+                          newExpanded.add(message.id);
+                        }
+                        setExpandedMessages(newExpanded);
+                      }}
+                      className="flex items-center space-x-1 mb-2 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
+                      style={{ color: message.type === 'user' ? colors.surface : colors.textTertiary }}
+                    >
+                      <span>{expandedMessages.has(message.id) ? '📖' : '📄'}</span>
+                      <span>{expandedMessages.has(message.id) ? 'Mostrar menos' : 'Mostrar tudo'}</span>
+                    </button>
+                  )}
+                  
+                  <div style={{
+                    maxHeight: message.content.length > 500 && !expandedMessages.has(message.id) ? '150px' : 'none',
+                    overflow: message.content.length > 500 && !expandedMessages.has(message.id) ? 'hidden' : 'visible',
+                    position: 'relative'
+                  }}>
+                    {message.type === 'assistant' ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={MarkdownComponents}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    ) : (
+                      <div className="whitespace-pre-wrap">{message.content}</div>
+                    )}
+                    
+                    {/* Gradient overlay quando colapsado (mensagens longas) */}
+                    {message.content.length > 500 && !expandedMessages.has(message.id) && (
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: '50px',
+                          background: message.type === 'user' 
+                            ? `linear-gradient(transparent, ${colors.accent})`
+                            : `linear-gradient(transparent, ${message.is_error ? colors.errorLight : colors.surface})`,
+                          pointerEvents: 'none'
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+                
                 {message.type === 'assistant' && formatMetadata(message) && (
                   <div className="text-xs mt-3 pt-2 border-t" style={{ 
                     color: colors.textTertiary,
