@@ -468,9 +468,10 @@ export default function ClaudeChat() {
   // Trace streaming content changes
   useEffect(() => {
     if (currentStreamingContent) {
+      const contentStr = typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent);
       console.log('🌊 [TRACE] Streaming content updated:', {
-        contentLength: currentStreamingContent.length,
-        preview: currentStreamingContent.substring(0, 100) + '...',
+        contentLength: contentStr.length,
+        preview: contentStr.substring(0, 100) + '...',
         timestamp: new Date().toISOString()
       });
     } else {
@@ -540,7 +541,7 @@ export default function ClaudeChat() {
     newSocket.on('message_complete', (message: Message & { sessionId: string }) => {
       console.log('✅ [TRACE] Received message_complete event:', {
         messageId: message.id,
-        contentLength: message.content?.length,
+        contentLength: typeof message.content === 'string' ? message.content.length : 0,
         sessionId: message.sessionId,
         cost: message.cost,
         duration: message.duration,
@@ -693,7 +694,7 @@ export default function ClaudeChat() {
 
     console.log('📤 [TRACE] Sending message via socket:', {
       messageId: userMessage.id,
-      contentLength: userMessage.content.length,
+                      contentLength: typeof userMessage.content === 'string' ? userMessage.content.length : 0,
       sessionId: sessionId,
       timestamp: new Date().toISOString()
     });
@@ -970,7 +971,7 @@ export default function ClaudeChat() {
               <div>• Summary: <span style={{ color: colors.textSecondary }}>{data.outputSummary}</span></div>
             )}
             {data.errorDetails && (
-              <div>• Error: <span style={{ color: colors.error }}>{data.errorDetails.substring(0, 100)}...</span></div>
+              <div>• Error: <span style={{ color: colors.error }}>{String(data.errorDetails).substring(0, 100)}...</span></div>
             )}
           </>
         )}
@@ -1524,7 +1525,7 @@ export default function ClaudeChat() {
                 {/* Message content direto sem animação de collapse */}
                 <div>
                   {/* Botão para mensagens longas */}
-                  {message.content.length > 500 && (
+                  {(typeof message.content === 'string' ? message.content.length : 0) > 500 && (
                     <button
                       onClick={() => {
                         const newExpanded = new Set(expandedMessages);
@@ -1544,8 +1545,8 @@ export default function ClaudeChat() {
                   )}
                   
                   <div style={{
-                    maxHeight: message.content.length > 500 && !expandedMessages.has(message.id) ? '150px' : 'none',
-                    overflow: message.content.length > 500 && !expandedMessages.has(message.id) ? 'hidden' : 'visible',
+                                      maxHeight: (typeof message.content === 'string' ? message.content.length : 0) > 500 && !expandedMessages.has(message.id) ? '150px' : 'none',
+                  overflow: (typeof message.content === 'string' ? message.content.length : 0) > 500 && !expandedMessages.has(message.id) ? 'hidden' : 'visible',
                     position: 'relative'
                   }}>
                     {message.type === 'assistant' ? (
@@ -1553,14 +1554,14 @@ export default function ClaudeChat() {
                         remarkPlugins={[remarkGfm]}
                         components={MarkdownComponents}
                       >
-                        {message.content}
+                        {typeof message.content === 'string' ? message.content : String(message.content || '')}
                       </ReactMarkdown>
                     ) : (
-                      <div className="whitespace-pre-wrap">{message.content}</div>
+                      <div className="whitespace-pre-wrap">{typeof message.content === 'string' ? message.content : String(message.content || '')}</div>
                     )}
                     
                     {/* Gradient overlay quando colapsado (mensagens longas) */}
-                    {message.content.length > 500 && !expandedMessages.has(message.id) && (
+                    {(typeof message.content === 'string' ? message.content.length : 0) > 500 && !expandedMessages.has(message.id) && (
                       <div 
                         style={{
                           position: 'absolute',
@@ -1601,7 +1602,7 @@ export default function ClaudeChat() {
               step.step === 'tool_use' || step.step === 'tool_result'
             );
             const lastUserMessage = messages.filter(m => m.type === 'user').pop();
-            const isComplexRequest = lastUserMessage && lastUserMessage.content.length > 200;
+            const isComplexRequest = lastUserMessage && (typeof lastUserMessage.content === 'string' ? lastUserMessage.content.length : 0) > 200;
             const hasMultipleSteps = processingSteps.length > 3;
             
             // Só mostrar dropdown detalhado se for uma operação complexa
@@ -1693,9 +1694,10 @@ export default function ClaudeChat() {
           })()}
           
           {currentStreamingContent && (() => {
+            const contentStr = typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent);
             console.log('🌊 [TRACE] Rendering streaming content in UI:', {
-              contentLength: currentStreamingContent.length,
-              preview: currentStreamingContent.substring(0, 50) + '...'
+              contentLength: contentStr.length,
+              preview: contentStr.substring(0, 50) + '...'
             });
             
             return (
@@ -1713,7 +1715,7 @@ export default function ClaudeChat() {
                   remarkPlugins={[remarkGfm]}
                   components={MarkdownComponents}
                 >
-                  {currentStreamingContent}
+                  {typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent || '')}
                 </ReactMarkdown>
                 <div className="flex items-center mt-3 pt-2 border-t" style={{ borderTopColor: colors.borderLight }}>
                   <div className="flex space-x-1">
