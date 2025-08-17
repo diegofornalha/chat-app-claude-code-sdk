@@ -650,18 +650,20 @@ io.on('connection', (socket) => {
             console.log('Tool usage:', msg.type, msg.name || msg.tool_use_id);
           } else if (msg.type === 'assistant' && msg.message) {
             // Handle assistant messages that come without result field
-            assistantResponse = msg.message;
+            const messageContent = typeof msg.message === 'string' ? msg.message : JSON.stringify(msg.message);
+            assistantResponse = messageContent;
             console.log('📝 [TRACE] Got assistant message:', {
-              messageLength: msg.message.length,
-              preview: msg.message.substring(0, 100) + '...',
+              messageType: typeof msg.message,
+              messageLength: messageContent.length,
+              preview: messageContent.substring(0, 100) + '...',
               sessionId: currentSessionId
             });
             
             // Emit streaming for assistant messages too
             socket.emit('message_stream', {
               sessionId: currentSessionId,
-              content: msg.message,
-              fullContent: msg.message
+              content: messageContent,
+              fullContent: messageContent
             });
           }
         }
