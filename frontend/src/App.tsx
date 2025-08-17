@@ -1617,8 +1617,46 @@ export default function ClaudeChat() {
             );
           })}
           
-          {/* Processing Steps Display */}
-          {processingSteps.length > 0 && (
+          {/* Processing Steps Display - Only show for complex operations */}
+          {processingSteps.length > 0 && (() => {
+            // Determinar se deve mostrar detalhes técnicos baseado em:
+            // 1. Se há uso de ferramentas
+            // 2. Se a última mensagem do usuário é longa
+            // 3. Se há múltiplos steps de processamento
+            const hasToolUse = processingSteps.some(step => 
+              step.step === 'tool_use' || step.step === 'tool_result'
+            );
+            const lastUserMessage = messages.filter(m => m.type === 'user').pop();
+            const isComplexRequest = lastUserMessage && lastUserMessage.content.length > 200;
+            const hasMultipleSteps = processingSteps.length > 3;
+            
+            // Só mostrar dropdown detalhado se for uma operação complexa
+            const shouldShowDetails = hasToolUse || isComplexRequest || hasMultipleSteps;
+            
+            if (!shouldShowDetails) {
+              // Para mensagens simples, mostrar apenas indicador mínimo
+              return (
+                <div className="flex justify-start">
+                  <div className="rounded-xl px-5 py-3 shadow-sm border" style={{ 
+                    backgroundColor: colors.surface, 
+                    borderColor: colors.border,
+                    boxShadow: `0 1px 3px ${colors.overlayLight}`
+                  }}>
+                    <div className="flex items-center space-x-3">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent }}></div>
+                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent, animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent, animationDelay: '0.4s' }}></div>
+                      </div>
+                      <span className="text-sm font-medium" style={{ color: colors.textSecondary }}>Claude is thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            
+            // Para operações complexas, mostrar dropdown completo
+            return (
             <div className="flex justify-start">
               <div 
                 className="max-w-3xl rounded-xl px-5 py-3 shadow-sm border"
@@ -1677,7 +1715,8 @@ export default function ClaudeChat() {
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
           
           {currentStreamingContent && (() => {
             console.log('🌊 [TRACE] Rendering streaming content in UI:', {
