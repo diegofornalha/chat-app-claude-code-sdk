@@ -1730,7 +1730,7 @@ export default function ClaudeChat() {
             );
           })()}
           
-          {loading && !currentStreamingContent && (
+          {loading && !currentStreamingContent && processingSteps.length === 0 && (
             <div className="flex justify-start">
               <div className="rounded-xl px-5 py-3 shadow-sm border" style={{ 
                 backgroundColor: colors.surface, 

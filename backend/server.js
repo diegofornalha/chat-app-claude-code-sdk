@@ -648,6 +648,21 @@ io.on('connection', (socket) => {
             console.log('Claude is thinking...');
           } else if (msg.type === 'tool_use' || msg.type === 'tool_result') {
             console.log('Tool usage:', msg.type, msg.name || msg.tool_use_id);
+          } else if (msg.type === 'assistant' && msg.message) {
+            // Handle assistant messages that come without result field
+            assistantResponse = msg.message;
+            console.log('📝 [TRACE] Got assistant message:', {
+              messageLength: msg.message.length,
+              preview: msg.message.substring(0, 100) + '...',
+              sessionId: currentSessionId
+            });
+            
+            // Emit streaming for assistant messages too
+            socket.emit('message_stream', {
+              sessionId: currentSessionId,
+              content: msg.message,
+              fullContent: msg.message
+            });
           }
         }
         
