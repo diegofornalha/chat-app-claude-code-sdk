@@ -1,0 +1,112 @@
+
+> claude-chat-backend@1.0.0 start
+> node server.js
+
+🚀 Enhanced Claude Code SDK Server running on port 8080
+📋 Features enabled:
+  • Real-time streaming chat
+  • File upload and analysis
+  • Session management
+  • Conversation export
+  • Advanced Claude Code SDK integration
+  • WebSocket connections for real-time updates
+Client connected: lcFl-5Kb6bBONMyTAAAB
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Client connected: 731012DfULYQpeIfAAAD
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+📥 [TRACE] Received send_message event: {
+  socketId: 'lcFl-5Kb6bBONMyTAAAB',
+  dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
+  messageLength: 2,
+  sessionId: '',
+  timestamp: '2025-08-17T23:20:24.296Z'
+}
+✅ [TRACE] Message validation passed: { messagePreview: 'oi', sessionId: '', hasSystemPrompt: false }
+📤 [TRACE] Emitting user message: {
+  messageId: '1e4a6445-658e-4361-b9bd-202372277e30',
+  sessionId: 'd1378af9-6e40-431e-8717-dcc302cb425d',
+  contentLength: 2
+}
+⏳ [TRACE] Starting Claude query with options: {
+  sessionId: 'd1378af9-6e40-431e-8717-dcc302cb425d',
+  queryOptions: { maxTurns: 5 },
+  finalPromptLength: 2
+}
+🤖 [TRACE] Starting Claude Code query iteration
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print oi
+🔄 [TRACE] Claude Code message received: {
+  type: 'system',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [
+    'type',
+    'subtype',
+    'cwd',
+    'session_id',
+    'tools',
+    'mcp_servers',
+    'model',
+    'permissionMode',
+    'apiKeySource'
+  ]
+}
+🔄 [TRACE] Claude Code message received: {
+  type: 'assistant',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+🔄 [TRACE] Claude Code message received: {
+  type: 'result',
+  hasResult: true,
+  isError: false,
+  resultLength: 32,
+  messageKeys: [
+    'type',
+    'subtype',
+    'is_error',
+    'duration_ms',
+    'duration_api_ms',
+    'num_turns',
+    'result',
+    'session_id',
+    'total_cost_usd',
+    'usage'
+  ]
+}
+✅ [TRACE] Got successful Claude response: {
+  responseLength: 32,
+  preview: 'Oi! Como posso ajudar você hoje?...',
+  sessionId: 'd1378af9-6e40-431e-8717-dcc302cb425d',
+  metadata: {
+    cost: 0.10255270000000001,
+    duration: 2611,
+    turns: 1,
+    is_error: false
+  }
+}
+📤 [TRACE] Emitting message_stream event
+🏁 [TRACE] Claude query completed, processing final response
+💾 [TRACE] Saving assistant message to session: {
+  messageId: '2f1f65d8-c8b8-44f8-a07b-253cfe2727fd',
+  sessionId: 'd1378af9-6e40-431e-8717-dcc302cb425d',
+  contentLength: 32,
+  metadata: {
+    cost: 0.10255270000000001,
+    duration: 2611,
+    turns: 1,
+    is_error: false
+  }
+}
+📤 [TRACE] Emitting message_complete event: {
+  messageId: '2f1f65d8-c8b8-44f8-a07b-253cfe2727fd',
+  sessionId: 'd1378af9-6e40-431e-8717-dcc302cb425d'
+}
+Client disconnected: lcFl-5Kb6bBONMyTAAAB
+Client disconnected: 731012DfULYQpeIfAAAD
+Client connected: fVu7OZS6DbXOWbUpAAAG
+Client connected: wRe2eZvW0XMDENJbAAAH
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word

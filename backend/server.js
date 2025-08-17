@@ -786,6 +786,33 @@ Please provide a thorough analysis of this file.`;
     socket.emit('session_created', sessionData);
   });
   
+  // Handle session deletion
+  socket.on('delete_session', (sessionId) => {
+    console.log('🗑️ Deleting session:', sessionId);
+    const deleted = sessions.delete(sessionId);
+    
+    if (deleted) {
+      // Notify all connected clients about the deletion
+      io.emit('session_deleted', {
+        success: true,
+        sessionId: sessionId,
+        remainingSessions: sessions.size,
+        timestamp: Date.now()
+      });
+      
+      console.log('✅ Session deleted successfully:', sessionId);
+    } else {
+      socket.emit('session_deleted', {
+        success: false,
+        sessionId: sessionId,
+        error: 'Session not found',
+        timestamp: Date.now()
+      });
+      
+      console.log('❌ Session not found for deletion:', sessionId);
+    }
+  });
+  
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
     activeConnections.delete(socket.id);

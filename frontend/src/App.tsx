@@ -605,8 +605,8 @@ export default function ClaudeChat() {
       });
       
       if (data.success) {
-        // Recarregar a lista de sessões do servidor para garantir sincronização
-        loadSessions();
+        // Remover a sessão da lista local imediatamente
+        setSessions(prevSessions => prevSessions.filter(s => s.id !== data.sessionId));
         
         // Se a sessão deletada era a atual, limpar a interface
         if (sessionId === data.sessionId) {
@@ -1505,52 +1505,26 @@ export default function ClaudeChat() {
                     : `0 1px 3px ${colors.overlayLight}`
                 }}
               >
-                {/* Header com botão minimizar/expandir para TODAS as mensagens */}
-                <div className="flex items-center justify-between mb-2">
-                  <button
-                    onClick={() => {
-                      const newMinimized = new Set(minimizedMessages);
-                      if (newMinimized.has(message.id)) {
-                        newMinimized.delete(message.id);
-                      } else {
-                        newMinimized.add(message.id);
-                      }
-                      setMinimizedMessages(newMinimized);
-                    }}
-                    className="flex items-center space-x-2 text-sm font-medium cursor-pointer hover:opacity-70 transition-all duration-200"
-                    style={{ color: message.type === 'user' ? colors.surface : colors.textSecondary }}
-                  >
-                    <span style={{ 
-                      transform: minimizedMessages.has(message.id) ? 'rotate(0deg)' : 'rotate(90deg)',
-                      transition: 'transform 0.2s ease',
-                      display: 'inline-block'
-                    }}>▶</span>
-                    <span>{message.type === 'user' ? 'Você' : 'Claude'}</span>
-                    {minimizedMessages.has(message.id) && (
-                      <span className="text-xs opacity-75">
-                        ({message.content.substring(0, 50)}...)
-                      </span>
-                    )}
-                  </button>
-                  {message.timestamp && (
+                {/* Header simples sem funcionalidade de minimizar */}
+                {message.timestamp && (
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium" style={{ 
+                      color: message.type === 'user' ? colors.surface : colors.textSecondary 
+                    }}>
+                      {message.type === 'user' ? 'Você' : 'Claude'}
+                    </span>
                     <span className="text-xs opacity-60" style={{ 
                       color: message.type === 'user' ? colors.surface : colors.textTertiary 
                     }}>
                       {formatTimestamp(message.timestamp)}
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
                 
-                {/* Message content com animação de collapse/expand */}
-                <div style={{
-                  maxHeight: minimizedMessages.has(message.id) ? '0' : '5000px',
-                  overflow: 'hidden',
-                  transition: 'max-height 0.3s ease, opacity 0.3s ease',
-                  opacity: minimizedMessages.has(message.id) ? 0 : 1,
-                  position: 'relative'
-                }}>
-                  {/* Botão adicional para mensagens longas */}
-                  {message.content.length > 500 && !minimizedMessages.has(message.id) && (
+                {/* Message content direto sem animação de collapse */}
+                <div>
+                  {/* Botão para mensagens longas */}
+                  {message.content.length > 500 && (
                     <button
                       onClick={() => {
                         const newExpanded = new Set(expandedMessages);
