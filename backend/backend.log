@@ -10,4 +10,5 @@
   • Conversation export
   • Advanced Claude Code SDK integration
   • WebSocket connections for real-time updates
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Client connected: _yc0m3W6AupfrXw2AAAB
+Client connected: kbzuGxJ8Yvp9qO8eAAAD

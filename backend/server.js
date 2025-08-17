@@ -676,10 +676,12 @@ io.on('connection', (socket) => {
             
             if (messageContent) {
               assistantResponse = messageContent;
+              // Ensure messageContent is a string for logging
+              const messageStr = typeof messageContent === 'string' ? messageContent : JSON.stringify(messageContent);
               console.log('📝 [TRACE] Got assistant message:', {
                 messageType: typeof msg.message,
-                messageLength: messageContent.length,
-                preview: messageContent.substring(0, 100) + '...',
+                messageLength: messageStr.length,
+                preview: messageStr.substring(0, 100) + '...',
                 sessionId: currentSessionId
               });
               
