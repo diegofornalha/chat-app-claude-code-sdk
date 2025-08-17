@@ -530,8 +530,8 @@ export default function ClaudeChat() {
     newSocket.on('message_stream', (data: { sessionId: string; content: string; fullContent: string }) => {
       console.log('🌊 [TRACE] Received message_stream event:', {
         sessionId: data.sessionId,
-        contentLength: data.content?.length,
-        fullContentLength: data.fullContent?.length,
+        contentLength: typeof data.content === 'string' ? data.content.length : 0,
+        fullContentLength: typeof data.fullContent === 'string' ? data.fullContent.length : 0,
         timestamp: new Date().toISOString()
       });
       
