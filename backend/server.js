@@ -629,11 +629,19 @@ io.on('connection', (socket) => {
               });
               
               // Simple streaming simulation - just emit the full response
-              console.log('📤 [TRACE] Emitting message_stream event');
+              console.log('📤 [TRACE] Emitting message_stream event:', {
+                resultType: typeof msg.result,
+                resultLength: typeof msg.result === 'string' ? msg.result.length : 'N/A',
+                resultPreview: typeof msg.result === 'string' ? msg.result.substring(0, 100) : JSON.stringify(msg.result).substring(0, 100)
+              });
+              
+              // Ensure result is a string
+              const resultStr = typeof msg.result === 'string' ? msg.result : String(msg.result || '');
+              
               socket.emit('message_stream', {
                 sessionId: currentSessionId,
-                content: msg.result,
-                fullContent: msg.result
+                content: resultStr,
+                fullContent: resultStr
               });
               
             } else if (msg.is_error) {
@@ -707,6 +715,12 @@ io.on('connection', (socket) => {
         socket.emit('typing_end');
         
         // Validate response before sending
+        // Ensure assistantResponse is a string
+        if (typeof assistantResponse !== 'string') {
+          console.log('⚠️ [TRACE] Non-string response detected, converting:', typeof assistantResponse);
+          assistantResponse = assistantResponse ? String(assistantResponse) : '';
+        }
+        
         if (!assistantResponse || assistantResponse.trim() === '') {
           console.log('⚠️ [TRACE] Empty assistant response detected, using fallback');
           assistantResponse = "Desculpe, não consegui processar sua solicitação corretamente. Por favor, tente novamente.";
