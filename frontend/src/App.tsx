@@ -939,7 +939,7 @@ export default function ClaudeChat() {
     // Adicionar informações baseadas nas configurações
     if (uiSettings.showTokenUsage) {
       // Simular token usage (em produção viria do backend)
-      const estimatedTokens = Math.floor(message.content.length / 4);
+      const estimatedTokens = Math.floor(getMessageContent(message.content).length / 4);
       parts.push(`~${estimatedTokens} tokens`);
     }
     
@@ -964,6 +964,27 @@ export default function ClaudeChat() {
 
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString();
+  };
+
+  // Helper function to safely convert message content to string
+  const getMessageContent = (content: any): string => {
+    if (typeof content === 'string') {
+      return content;
+    }
+    if (typeof content === 'object' && content !== null) {
+      // Check if it's an error object
+      if (content.error || content.message) {
+        return content.error || content.message;
+      }
+      // Check if it has a text field
+      if (content.text) {
+        return content.text;
+      }
+      // Otherwise return empty to avoid [object Object]
+      console.warn('Unexpected message content format:', content);
+      return '';
+    }
+    return '';
   };
 
   useEffect(() => {
@@ -1485,7 +1506,7 @@ export default function ClaudeChat() {
                 {/* Message content direto sem animação de collapse */}
                 <div>
                   {/* Botão para mensagens longas */}
-                  {(typeof message.content === 'string' ? message.content.length : 0) > 500 && (
+                  {getMessageContent(message.content).length > 500 && (
                     <button
                       onClick={() => {
                         const newExpanded = new Set(expandedMessages);
@@ -1505,8 +1526,8 @@ export default function ClaudeChat() {
                   )}
                   
                   <div style={{
-                                      maxHeight: (typeof message.content === 'string' ? message.content.length : 0) > 500 && !expandedMessages.has(message.id) ? '150px' : 'none',
-                  overflow: (typeof message.content === 'string' ? message.content.length : 0) > 500 && !expandedMessages.has(message.id) ? 'hidden' : 'visible',
+                                      maxHeight: getMessageContent(message.content).length > 500 && !expandedMessages.has(message.id) ? '150px' : 'none',
+                  overflow: getMessageContent(message.content).length > 500 && !expandedMessages.has(message.id) ? 'hidden' : 'visible',
                     position: 'relative'
                   }}>
                     {message.type === 'assistant' ? (
@@ -1514,14 +1535,16 @@ export default function ClaudeChat() {
                         remarkPlugins={[remarkGfm]}
                         components={MarkdownComponents}
                       >
-                        {typeof message.content === 'string' ? message.content : String(message.content || '')}
+                        {getMessageContent(message.content)}
                       </ReactMarkdown>
                     ) : (
-                      <div className="whitespace-pre-wrap">{typeof message.content === 'string' ? message.content : String(message.content || '')}</div>
+                      <div className="whitespace-pre-wrap">
+                        {getMessageContent(message.content)}
+                      </div>
                     )}
                     
                     {/* Gradient overlay quando colapsado (mensagens longas) */}
-                    {(typeof message.content === 'string' ? message.content.length : 0) > 500 && !expandedMessages.has(message.id) && (
+                    {getMessageContent(message.content).length > 500 && !expandedMessages.has(message.id) && (
                       <div 
                         style={{
                           position: 'absolute',
