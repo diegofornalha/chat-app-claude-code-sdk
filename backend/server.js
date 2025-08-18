@@ -947,6 +947,88 @@ io.on('connection', (socket) => {
       sessionData.lastActivity = Date.now();
       sessions.set(currentSessionId, sessionData);
       
+      // Check if user is asking about the project
+      const projectQuestions = [
+        'do que se trata',
+        'sobre o projeto',
+        'sobre este projeto',
+        'what is this',
+        'o que é isso',
+        'o que é este projeto',
+        'qual é o projeto',
+        'me explique o projeto',
+        'explain the project',
+        'sobre o repositório',
+        'about this project',
+        'about the repository'
+      ];
+      
+      const isAskingAboutProject = projectQuestions.some(q => 
+        message.toLowerCase().includes(q.toLowerCase())
+      );
+      
+      if (isAskingAboutProject) {
+        const projectInfo = `# Sobre este Projeto
+
+Este é o **Claude Code Chat** - uma aplicação avançada de chat multi-agente que integra o Claude AI SDK com várias capacidades:
+
+## 🌟 Principais Recursos:
+
+### Interface Moderna
+- Chat em tempo real com Claude AI
+- Interface configurável com logs técnicos opcionais
+- Suporte a dark mode e animações suaves
+- Histórico de conversas persistente
+
+### Sistema Multi-Agente
+- **Claude AI**: Assistente principal para código e análise
+- **Crew AI**: Orquestração de agentes especializados
+- **Context Engine**: Processamento com memória e contexto
+- **A2A Router**: Comunicação inteligente entre agentes
+
+### Capacidades Técnicas
+- Integração com AI SDK Provider v5
+- Memória persistente com Neo4j
+- Processamento em streaming
+- Upload e análise de arquivos
+- Exportação de conversas
+
+## 🎯 Como Usar:
+1. Digite sua mensagem no campo de texto
+2. Escolha um agente específico ou use a seleção automática
+3. Configure a interface em "UI Config" conforme sua preferência
+4. Use "Settings" para ajustar parâmetros do sistema
+
+## 🔧 Configurações Disponíveis:
+- **UI Config**: Controle visualização de logs, animações e métricas
+- **Settings**: Ajuste system prompt, max turns e streaming
+- **Sessions**: Acesse histórico de conversas anteriores
+
+## 📡 Status:
+- Conexão: ${connected ? '✅ Conectado' : '❌ Desconectado'}
+- Agentes disponíveis: Claude, Crew-AI, Context Engine
+- Memória: ${contextEngine ? 'Ativa' : 'Inativa'}
+
+Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar projetos ou qualquer outra tarefa de desenvolvimento!`;
+        
+        const infoMessage = {
+          id: uuidv4(),
+          type: 'assistant',
+          content: projectInfo,
+          timestamp: Date.now()
+        };
+        
+        sessionData.messages.push(infoMessage);
+        sessions.set(currentSessionId, sessionData);
+        
+        socket.emit('message_complete', {
+          ...infoMessage,
+          sessionId: currentSessionId
+        });
+        
+        return; // Don't process further
+      }
+      
       // Emit user message
       console.log('📤 [TRACE] Emitting user message:', {
         messageId: userMessage.id,
@@ -1274,9 +1356,19 @@ io.on('connection', (socket) => {
       
     } catch (error) {
       console.error('Message handling error:', error);
-      socket.emit('error', { 
-        error: 'Failed to process message',
-        details: error.message 
+      
+      // Send error message in the correct format
+      const errorMessage = {
+        id: crypto.randomUUID(),
+        type: 'assistant',
+        content: `Desculpe, não consegui processar sua solicitação corretamente. Por favor, tente novamente.\n\nDetalhes do erro: ${error.message}`,
+        timestamp: Date.now(),
+        is_error: true
+      };
+      
+      socket.emit('error', {
+        ...errorMessage,
+        sessionId: currentSessionId || 'default'
       });
     }
   });
