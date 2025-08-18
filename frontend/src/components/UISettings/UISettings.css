@@ -25,8 +25,8 @@
   background: white;
   border-radius: 16px;
   width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
+  max-width: 720px;
+  max-height: 85vh;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   animation: slideUp 0.3s ease-out;
@@ -82,7 +82,26 @@
 .ui-settings-content {
   padding: 24px;
   overflow-y: auto;
-  max-height: calc(80vh - 140px);
+  max-height: calc(85vh - 140px);
+  scrollbar-width: thin;
+  scrollbar-color: #e0e0e0 transparent;
+}
+
+.ui-settings-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ui-settings-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ui-settings-content::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-radius: 4px;
+}
+
+.ui-settings-content::-webkit-scrollbar-thumb:hover {
+  background: #ccc;
 }
 
 .ui-settings-section {
@@ -94,12 +113,17 @@
 }
 
 .ui-settings-section h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: #666;
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 .ui-setting-item {
@@ -189,11 +213,20 @@
 /* Footer */
 .ui-settings-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid #e0e0e0;
   background: #fafafa;
+}
+
+.ui-settings-info-text {
+  color: #666;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .ui-settings-btn {

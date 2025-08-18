@@ -106,6 +106,15 @@ export interface AppState {
     autoExpandLogs: boolean;
     animationsEnabled: boolean;
     compactMode: boolean;
+    // Novas opções de debug
+    showTimestamps: boolean;
+    showMessageIds: boolean;
+    showNetworkLatency: boolean;
+    showAgentVersions: boolean;
+    showTokenUsage: boolean;
+    enableConsoleLogs: boolean;
+    showSessionInfo: boolean;
+    showCostEstimates: boolean;
   };
   
   // Métricas
@@ -184,11 +193,20 @@ const initialState: AppState = {
   isSidebarOpen: true,
   theme: 'light',
   uiSettings: {
-    showProcessingLogs: false, // Por padrão desabilitado
-    showDetailedMetrics: false,
-    autoExpandLogs: false,
+    showProcessingLogs: true, // Habilitado por padrão
+    showDetailedMetrics: true,
+    autoExpandLogs: true,
     animationsEnabled: true,
-    compactMode: false
+    compactMode: true,
+    // Novas opções de debug - todas habilitadas por padrão
+    showTimestamps: true,
+    showMessageIds: true,
+    showNetworkLatency: true,
+    showAgentVersions: true,
+    showTokenUsage: true,
+    enableConsoleLogs: true,
+    showSessionInfo: true,
+    showCostEstimates: true
   },
   metrics: {
     totalMessages: 0,

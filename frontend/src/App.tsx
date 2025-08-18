@@ -441,11 +441,20 @@ export default function ClaudeChat() {
     streamingEnabled: true
   });
   const [uiSettings, setUiSettings] = useState({
-    showProcessingLogs: false,
-    showDetailedMetrics: false,
-    autoExpandLogs: false,
+    showProcessingLogs: true,
+    showDetailedMetrics: true,
+    autoExpandLogs: true,
     animationsEnabled: true,
-    compactMode: false
+    compactMode: true,
+    // Novas opções de debug
+    showTimestamps: true,
+    showMessageIds: true,
+    showNetworkLatency: true,
+    showAgentVersions: true,
+    showTokenUsage: true,
+    enableConsoleLogs: true,
+    showSessionInfo: true,
+    showCostEstimates: true
   });
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -470,43 +479,51 @@ export default function ClaudeChat() {
 
   // Trace messages state changes
   useEffect(() => {
-    console.log('🔄 [TRACE] Messages state updated:', {
-      messageCount: messages.length,
-      lastMessage: messages[messages.length - 1],
-      timestamp: new Date().toISOString()
-    });
-  }, [messages]);
+    if (uiSettings.enableConsoleLogs) {
+      console.log('🔄 [TRACE] Messages state updated:', {
+        messageCount: messages.length,
+        lastMessage: messages[messages.length - 1],
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [messages, uiSettings.enableConsoleLogs]);
 
   // Trace streaming content changes
   useEffect(() => {
-    if (currentStreamingContent) {
-      const contentStr = typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent);
-      console.log('🌊 [TRACE] Streaming content updated:', {
-        contentLength: contentStr.length,
-        preview: contentStr.substring(0, 100) + '...',
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      console.log('🛑 [TRACE] Streaming content cleared');
+    if (uiSettings.enableConsoleLogs) {
+      if (currentStreamingContent) {
+        const contentStr = typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent);
+        console.log('🌊 [TRACE] Streaming content updated:', {
+          contentLength: contentStr.length,
+          preview: contentStr.substring(0, 100) + '...',
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        console.log('🛑 [TRACE] Streaming content cleared');
+      }
     }
-  }, [currentStreamingContent]);
+  }, [currentStreamingContent, uiSettings.enableConsoleLogs]);
 
   // Trace loading state changes
   useEffect(() => {
-    console.log('⏳ [TRACE] Loading state changed:', {
-      loading: loading,
-      timestamp: new Date().toISOString()
-    });
-  }, [loading]);
+    if (uiSettings.enableConsoleLogs) {
+      console.log('⏳ [TRACE] Loading state changed:', {
+        loading: loading,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [loading, uiSettings.enableConsoleLogs]);
 
   // Trace processing steps changes
   useEffect(() => {
-    console.log('🔄 [TRACE] Processing steps updated:', {
-      stepCount: processingSteps.length,
-      steps: processingSteps.map(s => ({ step: s.step, message: s.message })),
-      timestamp: new Date().toISOString()
-    });
-  }, [processingSteps]);
+    if (uiSettings.enableConsoleLogs) {
+      console.log('🔄 [TRACE] Processing steps updated:', {
+        stepCount: processingSteps.length,
+        steps: processingSteps.map(s => ({ step: s.step, message: s.message })),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [processingSteps, uiSettings.enableConsoleLogs]);
 
   const initializeSocket = () => {
     const newSocket = io('http://localhost:8080');
@@ -901,10 +918,31 @@ export default function ClaudeChat() {
 
   const formatMetadata = (message: Message) => {
     const parts = [];
-    if (message.cost !== undefined) parts.push(`$${message.cost.toFixed(4)}`);
-    if (message.duration !== undefined) parts.push(`${message.duration.toFixed(0)}ms`);
-    if (message.turns !== undefined) parts.push(`${message.turns} turns`);
-    return parts.length > 0 ? `(${parts.join(' • ')})` : '';
+    
+    // Adicionar informações baseadas nas configurações
+    if (uiSettings.showTokenUsage) {
+      // Simular token usage (em produção viria do backend)
+      const estimatedTokens = Math.floor(message.content.length / 4);
+      parts.push(`~${estimatedTokens} tokens`);
+    }
+    
+    if (uiSettings.showCostEstimates && message.cost !== undefined) {
+      parts.push(`$${message.cost.toFixed(4)}`);
+    }
+    
+    if (uiSettings.showNetworkLatency && message.duration !== undefined) {
+      parts.push(`${message.duration.toFixed(0)}ms`);
+    }
+    
+    if (message.turns !== undefined) {
+      parts.push(`${message.turns} turns`);
+    }
+    
+    if (uiSettings.showSessionInfo && sessionId) {
+      parts.push(`Session: ${sessionId.substring(0, 8)}`);
+    }
+    
+    return parts.length > 0 ? parts.join(' • ') : '';
   };
 
   const formatTimestamp = (timestamp: number) => {
@@ -1371,19 +1409,59 @@ export default function ClaudeChat() {
                     : `0 1px 3px ${colors.overlayLight}`
                 }}
               >
-                {/* Header simples sem funcionalidade de minimizar */}
+                {/* Header com informações extras baseadas nas configurações */}
                 {message.timestamp && (
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium" style={{ 
-                      color: message.type === 'user' ? colors.surface : colors.textSecondary 
-                    }}>
-                      {message.type === 'user' ? 'Você' : 'Claude'}
-                    </span>
-                    <span className="text-xs opacity-60" style={{ 
-                      color: message.type === 'user' ? colors.surface : colors.textTertiary 
-                    }}>
-                      {formatTimestamp(message.timestamp)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium" style={{ 
+                        color: message.type === 'user' ? colors.surface : colors.textSecondary 
+                      }}>
+                        {message.type === 'user' ? 'Você' : `Claude ${message.agent ? `(${message.agent})` : ''}`}
+                      </span>
+                      {uiSettings.showMessageIds && (
+                        <span className="text-xs opacity-50" style={{ 
+                          color: message.type === 'user' ? colors.surface : colors.textTertiary,
+                          fontFamily: 'monospace'
+                        }}>
+                          #{message.id.substring(0, 8)}
+                        </span>
+                      )}
+                      {uiSettings.showAgentVersions && message.agent && (
+                        <span className="text-xs opacity-50" style={{ 
+                          color: message.type === 'user' ? colors.surface : colors.textTertiary
+                        }}>
+                          v1.0
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {uiSettings.showNetworkLatency && message.duration && (
+                        <span className="text-xs opacity-50" style={{ 
+                          color: message.type === 'user' ? colors.surface : colors.textTertiary
+                        }}>
+                          ⚡ {message.duration}ms
+                        </span>
+                      )}
+                      {uiSettings.showCostEstimates && message.cost && (
+                        <span className="text-xs opacity-50" style={{ 
+                          color: message.type === 'user' ? colors.surface : colors.textTertiary
+                        }}>
+                          💰 ${message.cost.toFixed(4)}
+                        </span>
+                      )}
+                      <span className="text-xs opacity-60" style={{ 
+                        color: message.type === 'user' ? colors.surface : colors.textTertiary 
+                      }}>
+                        {uiSettings.showTimestamps 
+                          ? new Date(message.timestamp).toLocaleString('pt-BR', { 
+                              hour: '2-digit', 
+                              minute: '2-digit', 
+                              second: '2-digit',
+                              fractionalSecondDigits: 3
+                            }).replace(',', '.')
+                          : formatTimestamp(message.timestamp)}
+                      </span>
+                    </div>
                   </div>
                 )}
                 
