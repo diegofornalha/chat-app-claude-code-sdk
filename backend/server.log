@@ -149,3 +149,481 @@ Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-ap
   messageId: 'c158e349-aa10-4d51-b218-0975d01b66f6',
   sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872'
 }
+📥 [TRACE] Received send_message event: {
+  socketId: 'a_jgHFd5u8bSEWuSAAAH',
+  dataKeys: [
+    'message',
+    'sessionId',
+    'systemPrompt',
+    'maxTurns',
+    'allowedTools'
+  ],
+  messageLength: 3867,
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
+  timestamp: '2025-08-18T09:46:05.772Z'
+}
+✅ [TRACE] Message validation passed: {
+  messagePreview: 'me ajude a responder essas perguntas Dando seguimento ao nosso trabalho de elaboração de MoU e em se',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
+  hasSystemPrompt: true
+}
+📤 [TRACE] Emitting user message: {
+  messageId: '23043695-64a5-4281-a65d-f06261d54222',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
+  contentLength: 3867
+}
+⏳ [TRACE] Starting Claude query with options: {
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
+  queryOptions: { maxTurns: 10 },
+  finalPromptLength: 7807
+}
+🤖 [TRACE] Starting Claude Code query iteration
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 10 --print vc vai ajudar o usuario responder todas essas perguntas porém vai ser uma por uma, uma de cada vez. Dando seguimento ao nosso trabalho de elaboração de MoU e em seguida da Estruturação do Negócio, segue abaixo um questionário que irá nortear a nossa elaboração: 
+
+Para o MoU: 
+1. Informações Pessoais dos Sócios que entrarão no Contrato Social no Primeiro Momento (Exemplo: Diego, Bianca e o outro Sócio que será o CEO)
+
+·         Nome completo:
+
+·         Nacionalidade:
+
+·         Estado civil:
+
+·         Profissão:
+
+·         RG / CPF:
+
+·         Endereço completo:
+
+·         E-mail:
+
+·         Telefone / WhatsApp:
+
+2. Estrutura da Sociedade
+
+·     Três opções de nome empresarial para a Sociedade, com indicação da ordem de preferência e nome fantasia (se existente);
+
+     Indicação do objeto social;
+     Valor do capital social e forma de integralização;
+     Endereço completo, metragem e sequencial imobiliário na prefeitura, do imóvel em que a Sociedade se instalará;
+Obs.: Necessário indicar se é imóvel urbano ou rural, metragem e sequencial imobiliário.
+ 
+Nome completo, RG e CPF, data de nascimento, profissão, nome dos genitores, estado civil com indicação do regime de bens, endereço completo, telefone e e-mail dos sócios e administradores da Sociedade;
+ 
+Obs.2: Necessário indicar ainda telefone e e-mail que irão constar na Ficha de Cadastro do CNPJ.
+ 
+Indicação da forma administração (isolada e/ou conjunta), bem como do administrador que será o representante da Sociedade perante a RFB, para efeitos de assinatura dos formulários e requerimentos.
+Cópia Autenticada do RG e CPF dos sócios e administradores da Sociedade; 
+
+Cópia simples do comprovante de residência sócios e administradores da Sociedade.
+·         Forma jurídica pretendida (LTDA, S.A., Sociedade Simples etc.):
+
+·         Capital social previsto (valor total em R$):
+
+·         Forma de integralização do capital (dinheiro, bens, serviços):
+
+·         Quotas ou ações de cada sócio (percentual):
+
+·         Haverá possibilidade de novos sócios no futuro? (Sim/Não):
+
+3. Governança e Administração
+
+·         Haverá administrador(es) nomeado(s)? Quem será?
+
+·         Haverá pró-labore? De quanto?
+
+·         Quais decisões exigirão unanimidade?
+
+·         Haverá conselho consultivo ou deliberativo?
+
+·         Será permitida a atuação individual dos sócios ou apenas em conjunto?
+
+4. Distribuição de Lucros e Reinvestimento
+
+·         Periodicidade da distribuição de lucros (mensal, trimestral, anual etc.):
+
+·         Critérios de distribuição (proporcional às quotas, outro critério?):
+
+·         Parte dos lucros será reinvestida na empresa? (Sim/Não – Qual percentual?)
+
+5. Cláusulas de Proteção e Saída
+
+·         Haverá cláusula de não concorrência? Qual o prazo?
+
+·         Em caso de saída de um sócio, como se dará a apuração e pagamento das quotas?
+
+·         Direito de preferência em caso de venda de quotas? (Sim/Não)
+
+·         Haverá cláusula de lock-up ou vesting para sócios? (Sim/Não – Qual período?)
+
+·         Em caso de falecimento, as quotas serão transferidas a herdeiros? (Sim/Não – com ou sem anuência dos demais?)
+
+6. Conflitos e Solução de Controvérsias
+
+·         Como serão resolvidos os conflitos societários? 
+
+·         Haverá cláusula de arbitragem? Em qual câmara?
+
+·         Cidade e foro eleito para resolução de disputas:
+
+7. Aspectos Estratégicos
+
+·         Quais os objetivos estratégicos da empresa nos primeiros 3 anos?
+
+·         Haverá atuação exclusiva de algum dos sócios na empresa?
+
+·         Os sócios poderão ter outras atividades paralelas? Com que restrições?
+
+·         Haverá metas e indicadores de desempenho? Quais?
+
+8. Investimentos e Financiamentos
+
+·         Pretende-se buscar investidores externos? (Sim/Não)
+
+·         Quais serão as regras para entrada de investidores?
+
+·         Haverá aporte inicial além do capital social? Por quem?
+
+Qualquer dúvida, estou à disposição. 
+
+
+User: me ajude a responder essas perguntas Dando seguimento ao nosso trabalho de elaboração de MoU e em seguida da Estruturação do Negócio, segue abaixo um questionário que irá nortear a nossa elaboração: 
+
+Para o MoU: 
+1. Informações Pessoais dos Sócios que entrarão no Contrato Social no Primeiro Momento (Exemplo: Diego, Bianca e o outro Sócio que será o CEO)
+
+·         Nome completo:
+
+·         Nacionalidade:
+
+·         Estado civil:
+
+·         Profissão:
+
+·         RG / CPF:
+
+·         Endereço completo:
+
+·         E-mail:
+
+·         Telefone / WhatsApp:
+
+2. Estrutura da Sociedade
+
+·     Três opções de nome empresarial para a Sociedade, com indicação da ordem de preferência e nome fantasia (se existente);
+
+     Indicação do objeto social;
+     Valor do capital social e forma de integralização;
+     Endereço completo, metragem e sequencial imobiliário na prefeitura, do imóvel em que a Sociedade se instalará;
+Obs.: Necessário indicar se é imóvel urbano ou rural, metragem e sequencial imobiliário.
+ 
+Nome completo, RG e CPF, data de nascimento, profissão, nome dos genitores, estado civil com indicação do regime de bens, endereço completo, telefone e e-mail dos sócios e administradores da Sociedade;
+ 
+Obs.2: Necessário indicar ainda telefone e e-mail que irão constar na Ficha de Cadastro do CNPJ.
+ 
+Indicação da forma administração (isolada e/ou conjunta), bem como do administrador que será o representante da Sociedade perante a RFB, para efeitos de assinatura dos formulários e requerimentos.
+Cópia Autenticada do RG e CPF dos sócios e administradores da Sociedade; 
+
+Cópia simples do comprovante de residência sócios e administradores da Sociedade.
+·         Forma jurídica pretendida (LTDA, S.A., Sociedade Simples etc.):
+
+·         Capital social previsto (valor total em R$):
+
+·         Forma de integralização do capital (dinheiro, bens, serviços):
+
+·         Quotas ou ações de cada sócio (percentual):
+
+·         Haverá possibilidade de novos sócios no futuro? (Sim/Não):
+
+3. Governança e Administração
+
+·         Haverá administrador(es) nomeado(s)? Quem será?
+
+·         Haverá pró-labore? De quanto?
+
+·         Quais decisões exigirão unanimidade?
+
+·         Haverá conselho consultivo ou deliberativo?
+
+·         Será permitida a atuação individual dos sócios ou apenas em conjunto?
+
+4. Distribuição de Lucros e Reinvestimento
+
+·         Periodicidade da distribuição de lucros (mensal, trimestral, anual etc.):
+
+·         Critérios de distribuição (proporcional às quotas, outro critério?):
+
+·         Parte dos lucros será reinvestida na empresa? (Sim/Não – Qual percentual?)
+
+5. Cláusulas de Proteção e Saída
+
+·         Haverá cláusula de não concorrência? Qual o prazo?
+
+·         Em caso de saída de um sócio, como se dará a apuração e pagamento das quotas?
+
+·         Direito de preferência em caso de venda de quotas? (Sim/Não)
+
+·         Haverá cláusula de lock-up ou vesting para sócios? (Sim/Não – Qual período?)
+
+·         Em caso de falecimento, as quotas serão transferidas a herdeiros? (Sim/Não – com ou sem anuência dos demais?)
+
+6. Conflitos e Solução de Controvérsias
+
+·         Como serão resolvidos os conflitos societários? 
+
+·         Haverá cláusula de arbitragem? Em qual câmara?
+
+·         Cidade e foro eleito para resolução de disputas:
+
+7. Aspectos Estratégicos
+
+·         Quais os objetivos estratégicos da empresa nos primeiros 3 anos?
+
+·         Haverá atuação exclusiva de algum dos sócios na empresa?
+
+·         Os sócios poderão ter outras atividades paralelas? Com que restrições?
+
+·         Haverá metas e indicadores de desempenho? Quais?
+
+8. Investimentos e Financiamentos
+
+·         Pretende-se buscar investidores externos? (Sim/Não)
+
+·         Quais serão as regras para entrada de investidores?
+
+·         Haverá aporte inicial além do capital social? Por quem?
+
+Qualquer dúvida, estou à disposição.
+🔄 [TRACE] Claude Code message received: {
+  type: 'system',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [
+    'type',
+    'subtype',
+    'cwd',
+    'session_id',
+    'tools',
+    'mcp_servers',
+    'model',
+    'permissionMode',
+    'apiKeySource'
+  ]
+}
+🔄 [TRACE] Claude Code message received: {
+  type: 'assistant',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+📝 [TRACE] Got assistant message: {
+  messageType: 'object',
+  messageLength: 117,
+  preview: '[{"type":"text","text":"Vou te ajudar a responder essas perguntas uma por uma. Vamos começar com a p...',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872'
+}
+📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
+🔄 [TRACE] Claude Code message received: {
+  type: 'assistant',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+📝 [TRACE] Got assistant message: {
+  messageType: 'object',
+  messageLength: 934,
+  preview: '[{"type":"tool_use","id":"toolu_01MyopFT7bCsQ5RaeiyTaysm","name":"TodoWrite","input":{"todos":[{"id"...',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872'
+}
+📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
+🔄 [TRACE] Claude Code message received: {
+  type: 'user',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+🔄 [TRACE] Claude Code message received: {
+  type: 'assistant',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+📝 [TRACE] Got assistant message: {
+  messageType: 'object',
+  messageLength: 429,
+  preview: '[{"type":"text","text":"**1. INFORMAÇÕES PESSOAIS DOS SÓCIOS**\\n\\nVamos preencher as informações par...',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872'
+}
+📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
+🔄 [TRACE] Claude Code message received: {
+  type: 'result',
+  hasResult: true,
+  isError: false,
+  resultLength: 388,
+  messageKeys: [
+    'type',
+    'subtype',
+    'is_error',
+    'duration_ms',
+    'duration_api_ms',
+    'num_turns',
+    'result',
+    'session_id',
+    'total_cost_usd',
+    'usage'
+  ]
+}
+✅ [TRACE] Got successful Claude response: {
+  responseLength: 388,
+  preview: '**1. INFORMAÇÕES PESSOAIS DOS SÓCIOS**\n' +
+    '\n' +
+    'Vamos preencher as informações para cada sócio. Você mencion...',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
+  metadata: {
+    cost: 0.39292759999999993,
+    duration: 81864,
+    turns: 4,
+    is_error: false
+  }
+}
+📤 [TRACE] Emitting message_stream event: {
+  resultType: 'string',
+  resultLength: 388,
+  resultPreview: '**1. INFORMAÇÕES PESSOAIS DOS SÓCIOS**\n' +
+    '\n' +
+    'Vamos preencher as informações para cada sócio. Você mencion'
+}
+🏁 [TRACE] Claude query completed, processing final response
+💾 [TRACE] Saving assistant message to session: {
+  messageId: 'fad25956-bc9b-4848-94fa-1a8a2b843394',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
+  contentLength: 388,
+  metadata: {
+    cost: 0.39292759999999993,
+    duration: 81864,
+    turns: 4,
+    is_error: false
+  }
+}
+📤 [TRACE] Emitting message_complete event: {
+  messageId: 'fad25956-bc9b-4848-94fa-1a8a2b843394',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872'
+}
+Client disconnected: VRUKVnuFyE8a34xiAAAG
+Client disconnected: a_jgHFd5u8bSEWuSAAAH
+Client connected: pBxjmAQ4wo5lGh4xAAAJ
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Client connected: ct9aMkp7hu6CpKDMAAAL
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Client disconnected: pBxjmAQ4wo5lGh4xAAAJ
+Client disconnected: ct9aMkp7hu6CpKDMAAAL
+Client connected: _DsQw0YFLOty27afAAAO
+Client connected: dKtK3W7QYCZidapaAAAP
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+📥 [TRACE] Received send_message event: {
+  socketId: 'dKtK3W7QYCZidapaAAAP',
+  dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
+  messageLength: 2,
+  sessionId: '',
+  timestamp: '2025-08-18T09:53:05.708Z'
+}
+✅ [TRACE] Message validation passed: { messagePreview: 'oi', sessionId: '', hasSystemPrompt: false }
+📤 [TRACE] Emitting user message: {
+  messageId: 'db270517-d775-4795-b048-74a5f42872b3',
+  sessionId: '26c5391b-ab48-4986-9d23-da825e299794',
+  contentLength: 2
+}
+⏳ [TRACE] Starting Claude query with options: {
+  sessionId: '26c5391b-ab48-4986-9d23-da825e299794',
+  queryOptions: { maxTurns: 5 },
+  finalPromptLength: 2
+}
+🤖 [TRACE] Starting Claude Code query iteration
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print oi
+🔄 [TRACE] Claude Code message received: {
+  type: 'system',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [
+    'type',
+    'subtype',
+    'cwd',
+    'session_id',
+    'tools',
+    'mcp_servers',
+    'model',
+    'permissionMode',
+    'apiKeySource'
+  ]
+}
+🔄 [TRACE] Claude Code message received: {
+  type: 'assistant',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+📝 [TRACE] Got assistant message: {
+  messageType: 'object',
+  messageLength: 59,
+  preview: '[{"type":"text","text":"Oi! Como posso ajudar você hoje?"}]...',
+  sessionId: '26c5391b-ab48-4986-9d23-da825e299794'
+}
+📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
+🔄 [TRACE] Claude Code message received: {
+  type: 'result',
+  hasResult: true,
+  isError: false,
+  resultLength: 32,
+  messageKeys: [
+    'type',
+    'subtype',
+    'is_error',
+    'duration_ms',
+    'duration_api_ms',
+    'num_turns',
+    'result',
+    'session_id',
+    'total_cost_usd',
+    'usage'
+  ]
+}
+✅ [TRACE] Got successful Claude response: {
+  responseLength: 32,
+  preview: 'Oi! Como posso ajudar você hoje?...',
+  sessionId: '26c5391b-ab48-4986-9d23-da825e299794',
+  metadata: {
+    cost: 0.058930500000000004,
+    duration: 3179,
+    turns: 1,
+    is_error: false
+  }
+}
+📤 [TRACE] Emitting message_stream event: {
+  resultType: 'string',
+  resultLength: 32,
+  resultPreview: 'Oi! Como posso ajudar você hoje?'
+}
+🏁 [TRACE] Claude query completed, processing final response
+💾 [TRACE] Saving assistant message to session: {
+  messageId: '02177450-b2d6-496b-8e8d-04366b14eddb',
+  sessionId: '26c5391b-ab48-4986-9d23-da825e299794',
+  contentLength: 32,
+  metadata: {
+    cost: 0.058930500000000004,
+    duration: 3179,
+    turns: 1,
+    is_error: false
+  }
+}
+📤 [TRACE] Emitting message_complete event: {
+  messageId: '02177450-b2d6-496b-8e8d-04366b14eddb',
+  sessionId: '26c5391b-ab48-4986-9d23-da825e299794'
+}

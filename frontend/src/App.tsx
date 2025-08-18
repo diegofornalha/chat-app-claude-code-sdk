@@ -601,11 +601,28 @@ export default function ClaudeChat() {
       setLoading(false);
       setCurrentStreamingContent('');
       
+      // Garantir que error seja sempre uma string
+      let errorContent = 'Unknown error';
+      if (error.content && typeof error.content === 'string') {
+        errorContent = error.content;
+      } else if (error.error && typeof error.error === 'string') {
+        errorContent = error.error;
+      } else if (error.details && typeof error.details === 'string') {
+        errorContent = error.details;
+      } else if (error.message && typeof error.message === 'string') {
+        errorContent = error.message;
+      } else if (typeof error === 'string') {
+        errorContent = error;
+      } else {
+        // Se for um objeto, tentar extrair uma mensagem útil
+        errorContent = 'Desculpe, não consegui processar sua solicitação corretamente. Por favor, tente novamente.';
+      }
+      
       const errorMessage: Message = {
-        id: Date.now().toString(),
+        id: error.id || Date.now().toString(),
         type: 'assistant',
-        content: `Error: ${error.error || error.details || 'Unknown error'}`,
-        timestamp: Date.now(),
+        content: errorContent,
+        timestamp: error.timestamp || Date.now(),
         is_error: true
       };
       

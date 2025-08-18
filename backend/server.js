@@ -680,6 +680,72 @@ app.get('/api/memory/labels', async (req, res) => {
   }
 });
 
+// Code Analyzer Endpoints
+app.get('/api/code/files', async (req, res) => {
+  try {
+    const codeAnalyzer = require('./services/CodeAnalyzer');
+    const files = await codeAnalyzer.listProjectFiles();
+    res.json({ files, count: files.length });
+  } catch (error) {
+    console.error('Error listing files:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/code/read', async (req, res) => {
+  try {
+    const { filePath } = req.body;
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+    
+    const codeAnalyzer = require('./services/CodeAnalyzer');
+    const fileContent = await codeAnalyzer.readFile(filePath);
+    res.json(fileContent);
+  } catch (error) {
+    console.error('Error reading file:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/code/search', async (req, res) => {
+  try {
+    const { pattern, flags } = req.body;
+    if (!pattern) {
+      return res.status(400).json({ error: 'Search pattern is required' });
+    }
+    
+    const codeAnalyzer = require('./services/CodeAnalyzer');
+    const results = await codeAnalyzer.searchInCode(pattern, { flags });
+    res.json({ results, count: results.length });
+  } catch (error) {
+    console.error('Error searching code:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/code/structure', async (req, res) => {
+  try {
+    const codeAnalyzer = require('./services/CodeAnalyzer');
+    const structure = await codeAnalyzer.analyzeProjectStructure();
+    res.json(structure);
+  } catch (error) {
+    console.error('Error analyzing structure:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/code/context', async (req, res) => {
+  try {
+    const codeAnalyzer = require('./services/CodeAnalyzer');
+    const context = await codeAnalyzer.generateProjectContext();
+    res.json({ context });
+  } catch (error) {
+    console.error('Error generating context:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // AI SDK v5 REST Endpoints
 app.get('/api/aisdk/status', (req, res) => {
   if (!useAISDKv5) {
@@ -935,19 +1001,7 @@ io.on('connection', (socket) => {
         title: message.length > 50 ? message.substring(0, 50) + '...' : message
       };
       
-      // Add user message to session
-      const userMessage = {
-        id: uuidv4(),
-        type: 'user',
-        content: message,
-        timestamp: Date.now()
-      };
-      
-      sessionData.messages.push(userMessage);
-      sessionData.lastActivity = Date.now();
-      sessions.set(currentSessionId, sessionData);
-      
-      // Check if user is asking about the project
+      // Check if user is asking about the project BEFORE adding to session
       const projectQuestions = [
         'do que se trata',
         'sobre o projeto',
@@ -967,8 +1021,59 @@ io.on('connection', (socket) => {
         message.toLowerCase().includes(q.toLowerCase())
       );
       
+      // Check if user is asking about specific files
+      const fileQuestions = [
+        'mostre o código',
+        'show the code',
+        'listar arquivos',
+        'list files',
+        'quais arquivos',
+        'what files',
+        'estrutura do projeto',
+        'project structure'
+      ];
+      
+      const isAskingAboutFiles = fileQuestions.some(q => 
+        message.toLowerCase().includes(q.toLowerCase())
+      );
+      
+      // Add user message to session
+      const userMessage = {
+        id: uuidv4(),
+        type: 'user',
+        content: message,
+        timestamp: Date.now()
+      };
+      
+      sessionData.messages.push(userMessage);
+      sessionData.lastActivity = Date.now();
+      sessions.set(currentSessionId, sessionData);
+      
+      // Emit user message
+      socket.emit('message', {
+        ...userMessage,
+        sessionId: currentSessionId
+      });
+      
       if (isAskingAboutProject) {
-        const projectInfo = `# Sobre este Projeto
+        // Emit minimal processing indicators
+        socket.emit('typing_start');
+        socket.emit('processing_step', {
+          sessionId: currentSessionId,
+          step: 'system',
+          message: 'Processing: system',
+          timestamp: Date.now()
+        });
+        
+        // Use CodeAnalyzer to get dynamic project context
+        const codeAnalyzer = require('./services/CodeAnalyzer');
+        
+        try {
+          // Get dynamic project context
+          const projectContext = await codeAnalyzer.generateProjectContext();
+          const projectStructure = await codeAnalyzer.analyzeProjectStructure();
+          
+          const projectInfo = `# Sobre este Projeto
 
 Este é o **Claude Code Chat** - uma aplicação avançada de chat multi-agente que integra o Claude AI SDK com várias capacidades:
 
@@ -1004,41 +1109,168 @@ Este é o **Claude Code Chat** - uma aplicação avançada de chat multi-agente 
 - **Settings**: Ajuste system prompt, max turns e streaming
 - **Sessions**: Acesse histórico de conversas anteriores
 
+${projectContext}
+
+## 📡 Status:
+- Conexão: ${connected ? '✅ Conectado' : '❌ Desconectado'}
+- Agentes disponíveis: Claude, Crew-AI, Context Engine
+- Memória: ${contextEngine ? 'Ativa' : 'Inativa'}
+- Total de arquivos: ${projectStructure.total.files}
+- Tamanho total: ${(projectStructure.total.size / 1024 / 1024).toFixed(2)} MB
+
+Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar projetos ou qualquer outra tarefa de desenvolvimento!`;
+          
+          const infoMessage = {
+            id: uuidv4(),
+            type: 'assistant',
+            content: projectInfo,
+            timestamp: Date.now()
+          };
+          
+          sessionData.messages.push(infoMessage);
+          sessions.set(currentSessionId, sessionData);
+          
+          socket.emit('typing_end');
+          socket.emit('message_complete', {
+            ...infoMessage,
+            sessionId: currentSessionId
+          });
+          
+        } catch (error) {
+          console.error('Error generating project info:', error);
+          // Fallback to static info
+          const projectInfo = `# Sobre este Projeto
+
+Este é o **Claude Code Chat** - uma aplicação avançada de chat multi-agente.
+
 ## 📡 Status:
 - Conexão: ${connected ? '✅ Conectado' : '❌ Desconectado'}
 - Agentes disponíveis: Claude, Crew-AI, Context Engine
 - Memória: ${contextEngine ? 'Ativa' : 'Inativa'}
 
 Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar projetos ou qualquer outra tarefa de desenvolvimento!`;
-        
-        const infoMessage = {
-          id: uuidv4(),
-          type: 'assistant',
-          content: projectInfo,
-          timestamp: Date.now()
-        };
-        
-        sessionData.messages.push(infoMessage);
-        sessions.set(currentSessionId, sessionData);
-        
-        socket.emit('message_complete', {
-          ...infoMessage,
-          sessionId: currentSessionId
-        });
+          
+          const infoMessage = {
+            id: uuidv4(),
+            type: 'assistant',
+            content: projectInfo,
+            timestamp: Date.now()
+          };
+          
+          sessionData.messages.push(infoMessage);
+          sessions.set(currentSessionId, sessionData);
+          
+          socket.emit('typing_end');
+          socket.emit('message_complete', {
+            ...infoMessage,
+            sessionId: currentSessionId
+          });
+        }
         
         return; // Don't process further
       }
       
-      // Emit user message
-      console.log('📤 [TRACE] Emitting user message:', {
+      // Handle file listing requests
+      if (isAskingAboutFiles) {
+        socket.emit('typing_start');
+        socket.emit('processing_step', {
+          sessionId: currentSessionId,
+          step: 'system',
+          message: 'Analisando estrutura do projeto...',
+          timestamp: Date.now()
+        });
+        
+        const codeAnalyzer = require('./services/CodeAnalyzer');
+        
+        try {
+          const files = await codeAnalyzer.listProjectFiles();
+          const structure = await codeAnalyzer.analyzeProjectStructure();
+          
+          // Organizar arquivos por categoria
+          const filesByCategory = {
+            frontend: files.filter(f => f.path.startsWith('frontend/')),
+            backend: files.filter(f => f.path.startsWith('backend/')),
+            config: files.filter(f => f.name.includes('config') || f.name.includes('.json')),
+            docs: files.filter(f => f.extension === '.md')
+          };
+          
+          let fileInfo = `# Estrutura do Projeto
+
+`;
+          fileInfo += `## 📈 Estatísticas Gerais
+`;
+          fileInfo += `- Total de arquivos: ${files.length}\n`;
+          fileInfo += `- Tamanho total: ${(structure.total.size / 1024 / 1024).toFixed(2)} MB\n`;
+          fileInfo += `- Frontend: ${structure.frontend.framework} (${filesByCategory.frontend.length} arquivos)\n`;
+          fileInfo += `- Backend: ${structure.backend.framework} (${filesByCategory.backend.length} arquivos)\n\n`;
+          
+          fileInfo += `## 📁 Principais Arquivos\n\n`;
+          fileInfo += `### Frontend\n`;
+          filesByCategory.frontend.slice(0, 10).forEach(f => {
+            fileInfo += `- \`${f.path}\` (${(f.size / 1024).toFixed(1)} KB)\n`;
+          });
+          
+          fileInfo += `\n### Backend\n`;
+          filesByCategory.backend.slice(0, 10).forEach(f => {
+            fileInfo += `- \`${f.path}\` (${(f.size / 1024).toFixed(1)} KB)\n`;
+          });
+          
+          fileInfo += `\n### Configurações\n`;
+          filesByCategory.config.slice(0, 5).forEach(f => {
+            fileInfo += `- \`${f.path}\` (${(f.size / 1024).toFixed(1)} KB)\n`;
+          });
+          
+          fileInfo += `\n### Documentação\n`;
+          filesByCategory.docs.forEach(f => {
+            fileInfo += `- \`${f.path}\` (${(f.size / 1024).toFixed(1)} KB)\n`;
+          });
+          
+          fileInfo += `\n\n> Para ver o conteúdo de um arquivo específico, peça: "mostre o arquivo [caminho]"`;
+          
+          const filesMessage = {
+            id: uuidv4(),
+            type: 'assistant',
+            content: fileInfo,
+            timestamp: Date.now()
+          };
+          
+          sessionData.messages.push(filesMessage);
+          sessions.set(currentSessionId, sessionData);
+          
+          socket.emit('typing_end');
+          socket.emit('message_complete', {
+            ...filesMessage,
+            sessionId: currentSessionId
+          });
+          
+        } catch (error) {
+          console.error('Error listing files:', error);
+          const errorMessage = {
+            id: uuidv4(),
+            type: 'assistant',
+            content: 'Desculpe, não consegui listar os arquivos do projeto. Tente novamente mais tarde.',
+            timestamp: Date.now(),
+            is_error: true
+          };
+          
+          sessionData.messages.push(errorMessage);
+          sessions.set(currentSessionId, sessionData);
+          
+          socket.emit('typing_end');
+          socket.emit('message_complete', {
+            ...errorMessage,
+            sessionId: currentSessionId
+          });
+        }
+        
+        return; // Don't process further
+      }
+      
+      // Log emitting user message (already emitted above)
+      console.log('📤 [TRACE] User message emitted:', {
         messageId: userMessage.id,
         sessionId: currentSessionId,
         contentLength: userMessage.content.length
-      });
-      
-      socket.emit('message', {
-        ...userMessage,
-        sessionId: currentSessionId
       });
       
       // Prepare Claude Code query options
