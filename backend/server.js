@@ -694,10 +694,18 @@ io.on('connection', (socket) => {
               });
               
               // Emit streaming for assistant messages too
+              console.log('📤 [TRACE] Emitting assistant message_stream:', {
+                messageContentType: typeof messageContent,
+                messageContentLength: typeof messageContent === 'string' ? messageContent.length : 'N/A'
+              });
+              
+              // Ensure messageContent is a string
+              const messageContentStr = typeof messageContent === 'string' ? messageContent : String(messageContent || '');
+              
               socket.emit('message_stream', {
                 sessionId: currentSessionId,
-                content: messageContent,
-                fullContent: messageContent
+                content: messageContentStr,
+                fullContent: messageContentStr
               });
             }
           }
@@ -718,7 +726,30 @@ io.on('connection', (socket) => {
         // Ensure assistantResponse is a string
         if (typeof assistantResponse !== 'string') {
           console.log('⚠️ [TRACE] Non-string response detected, converting:', typeof assistantResponse);
-          assistantResponse = assistantResponse ? String(assistantResponse) : '';
+          
+          if (assistantResponse && typeof assistantResponse === 'object') {
+            // Try to extract meaningful content from object
+            if (assistantResponse.content) {
+              assistantResponse = assistantResponse.content;
+            } else if (assistantResponse.message) {
+              assistantResponse = assistantResponse.message;
+            } else if (assistantResponse.text) {
+              assistantResponse = assistantResponse.text;
+            } else if (Array.isArray(assistantResponse)) {
+              // If it's an array, try to join the contents
+              assistantResponse = assistantResponse
+                .map(item => typeof item === 'string' ? item : (item.content || item.message || item.text || ''))
+                .filter(item => item)
+                .join('\n');
+            } else {
+              // Last resort: try JSON.stringify for debugging
+              console.log('⚠️ [TRACE] Complex object response:', JSON.stringify(assistantResponse).substring(0, 200));
+              // Em vez de mostrar JSON bruto, mostrar mensagem amigável
+              assistantResponse = "Este projeto é um chat interativo com Claude Code SDK. Ele permite conversas em tempo real com o assistente Claude, incluindo recursos como streaming de respostas, gerenciamento de sessões e histórico de conversas.";
+            }
+          } else {
+            assistantResponse = assistantResponse ? String(assistantResponse) : '';
+          }
         }
         
         if (!assistantResponse || assistantResponse.trim() === '') {
@@ -742,6 +773,12 @@ io.on('connection', (socket) => {
             console.log('❌ [TRACE] Failed to parse JSON response');
             assistantResponse = "Desculpe, houve um erro ao processar a resposta. Por favor, tente novamente.";
           }
+        }
+        
+        // Ensure assistantResponse is a string
+        if (typeof assistantResponse !== 'string') {
+          console.log('⚠️ [TRACE] Non-string assistantResponse detected, converting:', typeof assistantResponse);
+          assistantResponse = assistantResponse ? String(assistantResponse) : '';
         }
         
         // Create assistant message
