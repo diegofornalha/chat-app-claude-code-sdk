@@ -791,6 +791,8 @@ export default function ClaudeChat() {
     setMessages([]);
     setSessionId('');
     setCurrentStreamingContent('');
+    setLoading(false);
+    setProcessingSteps([]);
     if (socket) {
       socket.emit('create_session');
     }
