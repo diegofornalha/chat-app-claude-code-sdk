@@ -7,6 +7,9 @@ const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { query } = require('@anthropic-ai/claude-code');
+const A2AClient = require('./a2a/client.js');
+const MCPClient = require('./mcp/client.js');
+const ContextEngine = require('./context/engine.js');
 
 const app = express();
 const server = http.createServer(app);
@@ -69,6 +72,86 @@ const upload = multer({
 // In-memory session storage (in production, use Redis or database)
 const sessions = new Map();
 const activeConnections = new Map();
+
+// Initialize clients
+const a2aClient = new A2AClient();
+const mcpClient = new MCPClient({
+  debug: process.env.MCP_DEBUG === 'true'
+});
+let contextEngine = null;
+
+// Initialize all systems
+async function initializeSystem() {
+  console.log('🚀 Initializing Chat Server Systems...');
+  
+  try {
+    // 1. Initialize MCP Client (Neo4j Memory)
+    console.log('📊 Connecting to Neo4j via MCP...');
+    try {
+      await mcpClient.connect();
+      console.log('✅ MCP Client connected to Neo4j');
+    } catch (mcpError) {
+      console.error('⚠️ MCP Client failed (continuing without memory):', mcpError.message);
+    }
+
+    // 2. Register A2A agents
+    console.log('🤖 Discovering A2A agents...');
+    try {
+      // Register Claude A2A wrapper
+      await a2aClient.registerAgent('claude', {
+        url: 'http://localhost:8001',
+        type: 'assistant'
+      });
+
+      // Register CrewAI agent
+      await a2aClient.registerAgent('crew-ai', {
+        url: 'http://localhost:8002',
+        type: 'team'
+      });
+
+      console.log('✅ A2A agents discovered and registered');
+    } catch (a2aError) {
+      console.error('⚠️ Some A2A agents failed to register:', a2aError.message);
+    }
+
+    // 3. Create Context Engine
+    contextEngine = new ContextEngine(mcpClient, a2aClient);
+    console.log('✅ Context Engine initialized');
+
+    // 4. Log system status
+    const status = contextEngine.getStatus();
+    console.log('\n📋 System Status:');
+    console.log('  MCP (Neo4j):', status.mcp.connected ? '✅ Connected' : '❌ Disconnected');
+    console.log('  A2A Agents:', status.a2a.availableAgents.length > 0 ? 
+      `✅ ${status.a2a.availableAgents.join(', ')}` : '❌ None');
+    console.log('  Context Engine: ✅ Active\n');
+    
+  } catch (error) {
+    console.error('❌ System initialization error:', error);
+  }
+}
+
+// Initialize on startup
+initializeSystem();
+
+// A2A Event handlers
+a2aClient.on('agent:registered', (agent) => {
+  console.log(`A2A Agent registered: ${agent.name}`);
+  io.emit('a2a:agent_registered', agent);
+});
+
+a2aClient.on('task:stream', (data) => {
+  const { task_id, content, agent } = data;
+  io.emit('a2a:stream', { task_id, content, agent });
+});
+
+a2aClient.on('task:complete', (task) => {
+  io.emit('a2a:task_complete', task);
+});
+
+a2aClient.on('knowledge:shared', (data) => {
+  console.log(`Knowledge shared by ${data.agent}:`, data.knowledge);
+});
 
 // Helper functions for processing step messages
 function getStepMessage(stepType, msg) {
@@ -368,6 +451,65 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   }
 });
 
+// A2A Agent endpoints
+app.get('/api/a2a/agents', (req, res) => {
+  const agents = a2aClient.listAgents();
+  res.json({ agents });
+});
+
+app.post('/api/a2a/select', (req, res) => {
+  const { agent } = req.body;
+  
+  try {
+    const selectedAgent = a2aClient.selectAgent(agent);
+    res.json({ 
+      success: true, 
+      agent: selectedAgent 
+    });
+  } catch (error) {
+    res.status(400).json({ 
+      error: error.message 
+    });
+  }
+});
+
+app.post('/api/a2a/task', async (req, res) => {
+  const { task, options } = req.body;
+  
+  try {
+    const taskResult = await a2aClient.sendTask(task, options);
+    res.json({ 
+      success: true, 
+      task: taskResult 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message 
+    });
+  }
+});
+
+app.get('/api/a2a/tasks', (req, res) => {
+  const tasks = a2aClient.getTasksStatus();
+  res.json({ tasks });
+});
+
+app.post('/api/a2a/decision', async (req, res) => {
+  const { context, options } = req.body;
+  
+  try {
+    const decision = await a2aClient.requestDecision(context, options);
+    res.json({ 
+      success: true, 
+      decision 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message 
+    });
+  }
+});
+
 // Export conversation endpoint
 app.post('/api/export', async (req, res) => {
   try {
@@ -420,6 +562,81 @@ app.post('/api/export', async (req, res) => {
   }
 });
 
+// Context Engine and Memory endpoints
+app.get('/api/context/status', (req, res) => {
+  if (contextEngine) {
+    res.json(contextEngine.getStatus());
+  } else {
+    res.status(503).json({ error: 'Context Engine not initialized' });
+  }
+});
+
+app.post('/api/context/message', async (req, res) => {
+  const { message, sessionId, agentType, useMemory } = req.body;
+  
+  if (!contextEngine) {
+    return res.status(503).json({ error: 'Context Engine not initialized' });
+  }
+  
+  try {
+    const result = await contextEngine.processMessage(message, sessionId || uuidv4(), {
+      agentType,
+      useMemory,
+      saveToMemory: true
+    });
+    
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/memory/search', async (req, res) => {
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'MCP Client not connected' });
+  }
+  
+  try {
+    const { query, limit, label } = req.query;
+    const memories = await mcpClient.searchMemories({
+      query,
+      limit: parseInt(limit) || 10,
+      label
+    });
+    
+    res.json({ memories });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/memory/create', async (req, res) => {
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'MCP Client not connected' });
+  }
+  
+  try {
+    const { label, properties } = req.body;
+    const memory = await mcpClient.createMemory(label, properties);
+    res.json(memory);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/memory/labels', async (req, res) => {
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'MCP Client not connected' });
+  }
+  
+  try {
+    const labels = await mcpClient.listMemoryLabels();
+    res.json({ labels });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Session management endpoints
 app.get('/api/sessions', (req, res) => {
   const sessionList = Array.from(sessions.entries()).map(([id, data]) => ({
@@ -456,6 +673,11 @@ io.on('connection', (socket) => {
   socket.emit('connection_stats', {
     active_connections: activeConnections.size,
     active_sessions: sessions.size
+  });
+
+  // Send A2A agents status
+  socket.emit('a2a:agents', {
+    agents: a2aClient.listAgents()
   });
   
   // Handle chat messages with streaming
@@ -845,6 +1067,171 @@ io.on('connection', (socket) => {
         details: error.message 
       });
     }
+  });
+
+  // Enhanced message handler with Context Engine
+  socket.on('send_message_with_context', async (data) => {
+    console.log('🧠 [Context] Processing message with Context Engine');
+    
+    const { message, sessionId, agentType = 'claude', useMemory = true } = data;
+    
+    if (!message || !message.trim()) {
+      socket.emit('error', { error: 'Message cannot be empty' });
+      return;
+    }
+    
+    const currentSessionId = sessionId || uuidv4();
+    
+    try {
+      // Use Context Engine for processing
+      if (contextEngine) {
+        const result = await contextEngine.processMessage(message, currentSessionId, {
+          agentType,
+          useMemory,
+          saveToMemory: true,
+          streaming: data.streaming || false
+        });
+        
+        // Add messages to session
+        const sessionData = sessions.get(currentSessionId) || {
+          id: currentSessionId,
+          created: Date.now(),
+          messages: [],
+          title: message.substring(0, 50)
+        };
+        
+        // Add user message
+        sessionData.messages.push({
+          id: uuidv4(),
+          type: 'user',
+          content: message,
+          timestamp: Date.now()
+        });
+        
+        // Add assistant response
+        sessionData.messages.push({
+          id: uuidv4(),
+          type: 'assistant',
+          content: result.response,
+          agent: result.agent,
+          hasContext: result.hasContext,
+          contextUsed: result.contextUsed,
+          timestamp: Date.now()
+        });
+        
+        sessions.set(currentSessionId, sessionData);
+        
+        // Emit response
+        socket.emit('message_complete', {
+          content: result.response,
+          agent: result.agent,
+          hasContext: result.hasContext,
+          contextUsed: result.contextUsed,
+          memories: result.memories,
+          sessionId: currentSessionId
+        });
+        
+      } else {
+        // Fallback to regular processing
+        socket.emit('error', { 
+          error: 'Context Engine not initialized',
+          fallback: 'Use regular send_message event'
+        });
+      }
+      
+    } catch (error) {
+      console.error('Context Engine error:', error);
+      socket.emit('error', { 
+        error: 'Failed to process message with context',
+        details: error.message 
+      });
+    }
+  });
+
+  // A2A Event Handlers
+  socket.on('a2a:select_agent', async (data) => {
+    const { agent } = data;
+    
+    try {
+      const selectedAgent = a2aClient.selectAgent(agent);
+      socket.emit('a2a:agent_selected', {
+        success: true,
+        agent: selectedAgent
+      });
+    } catch (error) {
+      socket.emit('a2a:error', {
+        error: error.message
+      });
+    }
+  });
+
+  socket.on('a2a:send_task', async (data) => {
+    const { task, options } = data;
+    
+    try {
+      const taskResult = await a2aClient.sendTask(task, options);
+      socket.emit('a2a:task_created', {
+        success: true,
+        task: taskResult
+      });
+    } catch (error) {
+      socket.emit('a2a:error', {
+        error: error.message
+      });
+    }
+  });
+
+  socket.on('a2a:send_message', async (data) => {
+    const { message, sessionId, useAgent } = data;
+    
+    try {
+      // Se useAgent está habilitado, usar o agente A2A selecionado
+      if (useAgent && a2aClient.selectedAgent) {
+        const response = await a2aClient.sendChatMessage(message, sessionId);
+        
+        socket.emit('a2a:message_response', {
+          response: response.response,
+          session_id: response.session_id,
+          agent: a2aClient.selectedAgent,
+          timestamp: response.timestamp
+        });
+      } else {
+        // Fallback para Claude direto (comportamento existente)
+        socket.emit('a2a:error', {
+          error: 'No A2A agent selected'
+        });
+      }
+    } catch (error) {
+      socket.emit('a2a:error', {
+        error: error.message
+      });
+    }
+  });
+
+  socket.on('a2a:request_decision', async (data) => {
+    const { context, options } = data;
+    
+    try {
+      const decision = await a2aClient.requestDecision(context, options);
+      socket.emit('a2a:decision_made', {
+        success: true,
+        decision
+      });
+    } catch (error) {
+      socket.emit('a2a:error', {
+        error: error.message
+      });
+    }
+  });
+
+  socket.on('a2a:get_agents', () => {
+    const agents = a2aClient.listAgents();
+    socket.emit('a2a:agents', { agents });
+  });
+
+  socket.on('a2a:get_tasks', () => {
+    const tasks = a2aClient.getTasksStatus();
+    socket.emit('a2a:tasks', { tasks });
   });
   
   // Handle file analysis requests

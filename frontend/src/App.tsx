@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { io, Socket } from 'socket.io-client';
+import AgentSelector from './components/AgentSelector';
 
 // Anthropic-inspired color system
 const colors = {
@@ -136,6 +137,7 @@ interface Message {
   duration?: number;
   turns?: number;
   is_error?: boolean;
+  agent?: string;
 }
 
 interface Session {
@@ -436,6 +438,7 @@ export default function ClaudeChat() {
     allowedTools: [],
     streamingEnabled: true
   });
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -554,7 +557,7 @@ export default function ClaudeChat() {
       setMessages(prev => {
         console.log('🔄 [TRACE] Updating messages state with complete message');
         // Replace any partial streaming message with the complete one
-        const filtered = prev.filter(m => m.type !== 'assistant' || !m.content.includes('...'));
+        const filtered = prev.filter(m => m.type !== 'assistant' || !(typeof m.content === 'string' ? m.content.includes('...') : false));
         return [...filtered, message];
       });
       setSessionId(message.sessionId);
@@ -654,6 +657,47 @@ export default function ClaudeChat() {
         setProcessingSteps([]);
       }, 2000); // Clear steps after 2 seconds
     });
+
+    // A2A Event Listeners
+    newSocket.on('a2a:message_response', (data: any) => {
+      console.log('🤖 [A2A] Message response received:', data);
+      
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: data.response,
+        timestamp: Date.now(),
+        agent: data.agent
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      setLoading(false);
+    });
+
+    newSocket.on('a2a:stream', (data: any) => {
+      console.log('🌊 [A2A] Stream data:', data);
+      setCurrentStreamingContent(prev => prev + data.content);
+    });
+
+    newSocket.on('a2a:task_complete', (data: any) => {
+      console.log('✅ [A2A] Task complete:', data);
+      setLoading(false);
+    });
+
+    newSocket.on('a2a:error', (data: any) => {
+      console.error('❌ [A2A] Error:', data);
+      
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: `A2A Error: ${data.error}`,
+        timestamp: Date.now(),
+        is_error: true
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      setLoading(false);
+    });
     
     setSocket(newSocket);
   };
@@ -675,6 +719,11 @@ export default function ClaudeChat() {
     }
   };
 
+  const handleAgentSelect = (agent: string | null) => {
+    setSelectedAgent(agent);
+    console.log('🤖 [TRACE] Agent selected:', agent || 'Claude Direct');
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || loading || !socket) {
       console.log('⚠️ [TRACE] Send message blocked:', {
@@ -694,7 +743,8 @@ export default function ClaudeChat() {
 
     console.log('📤 [TRACE] Sending message via socket:', {
       messageId: userMessage.id,
-                      contentLength: typeof userMessage.content === 'string' ? userMessage.content.length : 0,
+      contentLength: typeof userMessage.content === 'string' ? userMessage.content.length : 0,
+      selectedAgent: selectedAgent,
       sessionId: sessionId,
       timestamp: new Date().toISOString()
     });
@@ -703,14 +753,22 @@ export default function ClaudeChat() {
     setLoading(true);
     setCurrentStreamingContent('');
 
-    // Send message via socket
-    socket.emit('send_message', {
-      message: userMessage.content,
-      sessionId: sessionId,
-      systemPrompt: settings.systemPrompt || undefined,
-      maxTurns: settings.maxTurns,
-      allowedTools: settings.allowedTools,
-    });
+    // Send message via socket - usar A2A se um agente estiver selecionado
+    if (selectedAgent) {
+      socket.emit('a2a:send_message', {
+        message: userMessage.content,
+        sessionId: sessionId,
+        useAgent: true
+      });
+    } else {
+      socket.emit('send_message', {
+        message: userMessage.content,
+        sessionId: sessionId,
+        systemPrompt: settings.systemPrompt || undefined,
+        maxTurns: settings.maxTurns,
+        allowedTools: settings.allowedTools,
+      });
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -1089,6 +1147,11 @@ export default function ClaudeChat() {
                  connected ? 'Connected' : 'Disconnected'}
               </span>
             </div>
+            <AgentSelector 
+              socket={socket}
+              onAgentSelect={handleAgentSelect}
+              selectedAgent={selectedAgent}
+            />
             <HeaderButton
               onClick={() => setShowSidebar(!showSidebar)}
               active={showSidebar}
@@ -1481,7 +1544,7 @@ export default function ClaudeChat() {
             console.log('🎨 [TRACE] Rendering message in UI:', {
               messageId: message.id,
               type: message.type,
-              contentLength: message.content?.length,
+              contentLength: typeof message.content === 'string' ? message.content.length : 0,
               isError: message.is_error
             });
             
