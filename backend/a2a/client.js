@@ -3,8 +3,8 @@
  * Conecta e orquestra múltiplos agentes A2A
  */
 
-import { EventEmitter } from 'events';
-import WebSocket from 'ws';
+const { EventEmitter } = require('events');
+const WebSocket = require('ws');
 
 class A2AClient extends EventEmitter {
   constructor() {
@@ -29,12 +29,13 @@ class A2AClient extends EventEmitter {
     };
 
     try {
-      // Buscar agent card
-      const response = await fetch(config.url);
+      // Buscar agent card no endpoint padrão A2A
+      const cardUrl = `${config.url}/.well-known/agent.json`;
+      const response = await fetch(cardUrl);
       if (response.ok) {
         const card = await response.json();
         agentInfo.card = card;
-        agentInfo.capabilities = card.capabilities || [];
+        agentInfo.capabilities = card.capabilities || card.skills || [];
         agentInfo.status = 'connected';
       }
     } catch (error) {
@@ -453,4 +454,4 @@ class A2AClient extends EventEmitter {
   }
 }
 
-export default A2AClient;
+module.exports = A2AClient;

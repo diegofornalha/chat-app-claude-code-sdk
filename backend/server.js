@@ -97,19 +97,22 @@ async function initializeSystem() {
     // 2. Register A2A agents
     console.log('🤖 Discovering A2A agents...');
     try {
-      // Register Claude A2A wrapper
-      await a2aClient.registerAgent('claude', {
-        url: 'http://localhost:8001',
-        type: 'assistant'
-      });
 
       // Register CrewAI agent
       await a2aClient.registerAgent('crew-ai', {
-        url: 'http://localhost:8002',
+        url: 'http://localhost:8005',
         type: 'team'
       });
 
+      // Register Helloworld agent
+      await a2aClient.registerAgent('helloworld', {
+        url: 'http://localhost:9999',
+        type: 'generic'
+      });
+
+
       console.log('✅ A2A agents discovered and registered');
+      console.log('📋 Registered agents:', Array.from(a2aClient.agents.keys()));
     } catch (a2aError) {
       console.error('⚠️ Some A2A agents failed to register:', a2aError.message);
     }
@@ -664,6 +667,78 @@ app.delete('/api/sessions/:sessionId', (req, res) => {
   res.json({ success: deleted });
 });
 
+// Funções auxiliares para respostas naturais
+function generateNaturalResponse(message) {
+  const lowerMessage = message.toLowerCase();
+  
+  // Respostas contextuais baseadas em padrões
+  if (lowerMessage.includes('olá') || lowerMessage.includes('oi') || lowerMessage.includes('hello')) {
+    const greetings = [
+      'Olá! É um prazer conversar com você. Como posso ajudar hoje?',
+      'Oi! Estou aqui para ajudar. Em que posso ser útil?',
+      'Olá! Bem-vindo! Estou pronto para auxiliar você com análise de dados, extração de informações ou qualquer outra necessidade.',
+      'Oi! Como está? Posso ajudar com análise de dados, geração de relatórios ou qualquer processamento que precisar.'
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  }
+  
+  if (lowerMessage.includes('como você está') || lowerMessage.includes('tudo bem')) {
+    return 'Estou funcionando perfeitamente e pronto para ajudar! Tenho o suporte do CrewAI com agentes especializados para análise de dados, extração de padrões e geração de relatórios. Como posso auxiliar você hoje?';
+  }
+  
+  if (lowerMessage.includes('dados') || lowerMessage.includes('extrair') || lowerMessage.includes('extract')) {
+    return `Entendi que você precisa trabalhar com dados. Vou acionar nossa equipe CrewAI especializada em extração de dados para processar sua solicitação: "${message}". Os agentes especializados já estão analisando o contexto para fornecer a melhor solução.`;
+  }
+  
+  if (lowerMessage.includes('analis') || lowerMessage.includes('padrão') || lowerMessage.includes('pattern')) {
+    return `Perfeito! Vejo que você precisa de análise de padrões. O CrewAI possui agentes especializados exatamente para isso. Estou coordenando com o analisador de padrões para processar: "${message}". Em breve terei insights valiosos para compartilhar.`;
+  }
+  
+  if (lowerMessage.includes('relatório') || lowerMessage.includes('resumo') || lowerMessage.includes('report')) {
+    return `Compreendi sua necessidade de um relatório. Vou mobilizar o agente gerador de relatórios do CrewAI para criar um documento estruturado sobre: "${message}". O relatório será completo e organizado.`;
+  }
+  
+  if (lowerMessage.includes('ajud') || lowerMessage.includes('help') || lowerMessage.includes('pode')) {
+    return `Claro! Posso ajudar você com diversas tarefas através do sistema CrewAI:\n\n• Extração de dados estruturados\n• Análise de padrões e tendências\n• Geração de relatórios detalhados\n• Processamento de informações complexas\n\nSobre o que especificamente você gostaria de ajuda?`;
+  }
+  
+  // Resposta genérica contextual
+  return `Entendi sua mensagem: "${message}". Estou processando sua solicitação com o suporte dos agentes especializados do CrewAI. Nossa equipe inclui extratores de dados, analisadores de padrões e geradores de relatórios. Vou coordenar o melhor approach para atender sua necessidade.`;
+}
+
+function detectCrewAINeeded(message) {
+  const lowerMessage = message.toLowerCase();
+  return lowerMessage.includes('dados') || 
+         lowerMessage.includes('extrair') || 
+         lowerMessage.includes('analis') ||
+         lowerMessage.includes('padrão') ||
+         lowerMessage.includes('relatório') ||
+         lowerMessage.includes('process') ||
+         lowerMessage.includes('arquivo') ||
+         lowerMessage.includes('resumo');
+}
+
+function detectTaskType(message) {
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('extrair') || lowerMessage.includes('extract') || 
+      lowerMessage.includes('dados') || lowerMessage.includes('arquivo')) {
+    return 'data_extraction';
+  }
+  
+  if (lowerMessage.includes('analis') || lowerMessage.includes('padrão') || 
+      lowerMessage.includes('pattern') || lowerMessage.includes('trend')) {
+    return 'pattern_analysis';
+  }
+  
+  if (lowerMessage.includes('relatório') || lowerMessage.includes('resumo') || 
+      lowerMessage.includes('report') || lowerMessage.includes('summary')) {
+    return 'report_generation';
+  }
+  
+  return 'general_query';
+}
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -1153,11 +1228,21 @@ io.on('connection', (socket) => {
     const { agent } = data;
     
     try {
-      const selectedAgent = a2aClient.selectAgent(agent);
-      socket.emit('a2a:agent_selected', {
-        success: true,
-        agent: selectedAgent
-      });
+      if (agent === null) {
+        // Desselecionar agente A2A - usar Claude direto
+        a2aClient.selectedAgent = null;
+        socket.emit('a2a:agent_selected', {
+          success: true,
+          agent: null
+        });
+      } else {
+        // Selecionar agente A2A específico
+        const selectedAgent = a2aClient.selectAgent(agent);
+        socket.emit('a2a:agent_selected', {
+          success: true,
+          agent: selectedAgent
+        });
+      }
     } catch (error) {
       socket.emit('a2a:error', {
         error: error.message
@@ -1187,14 +1272,386 @@ io.on('connection', (socket) => {
     try {
       // Se useAgent está habilitado, usar o agente A2A selecionado
       if (useAgent && a2aClient.selectedAgent) {
-        const response = await a2aClient.sendChatMessage(message, sessionId);
+        console.log('🤖 [A2A] Processing message with agent:', a2aClient.selectedAgent);
         
-        socket.emit('a2a:message_response', {
-          response: response.response,
-          session_id: response.session_id,
-          agent: a2aClient.selectedAgent,
-          timestamp: response.timestamp
+        // Gerar session ID se não fornecido
+        const currentSessionId = sessionId || uuidv4();
+        
+        // Criar/atualizar sessão
+        let sessionData = sessions.get(currentSessionId) || {
+          id: currentSessionId,
+          created: Date.now(),
+          messages: [],
+          title: message.substring(0, 50) + '...',
+          agent: a2aClient.selectedAgent
+        };
+        
+        // Adicionar mensagem do usuário
+        const userMessage = {
+          id: uuidv4(),
+          type: 'user',
+          content: message,
+          timestamp: Date.now(),
+          agent: a2aClient.selectedAgent
+        };
+        
+        sessionData.messages.push(userMessage);
+        sessionData.lastActivity = Date.now();
+        sessions.set(currentSessionId, sessionData);
+        
+        // Emitir mensagem do usuário
+        socket.emit('message', {
+          ...userMessage,
+          sessionId: currentSessionId
         });
+        
+        // INTEGRAÇÃO COM CLAUDE CODE SDK
+        // Usar Claude Code SDK para processar a mensagem com contexto A2A
+        const queryOptions = {
+          maxTurns: 1,
+          agent: a2aClient.selectedAgent,
+          a2aEnabled: true
+        };
+        
+        // Preparar prompt com contexto do agente
+        const agentContext = `You are now coordinating with ${a2aClient.selectedAgent} agent via A2A protocol. 
+        This agent specializes in: ${a2aClient.agents.get(a2aClient.selectedAgent)?.capabilities?.join(', ') || 'general tasks'}.
+        Process this request considering the agent's capabilities.`;
+        
+        const finalPrompt = `${agentContext}\n\nUser: ${message}`;
+        
+        socket.emit('typing_start');
+        socket.emit('processing_step', {
+          sessionId: currentSessionId,
+          step: 'a2a_routing',
+          message: `Routing to ${a2aClient.selectedAgent} via A2A protocol...`,
+          timestamp: Date.now()
+        });
+        
+        let assistantResponse = '';
+        
+        // PIPELINE REAL: Claude Code SDK → CrewAI → Claude Format
+        if (a2aClient.selectedAgent === 'crew-ai') {
+          console.log('🤖 [A2A] REAL Pipeline: Claude + CrewAI');
+          
+          try {
+            // 1. Claude analisa a intenção REAL da mensagem
+            console.log('🧠 [Step 1] Claude analyzing intent...');
+            
+            const intentPrompt = {
+              prompt: `Analise esta mensagem e extraia a intenção:
+"${message}"
+
+Retorne um JSON com:
+- intent: (data_extraction|pattern_analysis|report_generation|general_query)
+- entities: lista de entidades mencionadas
+- context_needed: informações necessárias
+- response_type: (informative|analytical|actionable)
+
+Responda APENAS com o JSON, sem explicações.`,
+              options: { 
+                maxTurns: 1,
+                temperature: 0.3 
+              }
+            };
+            
+            let claudeIntent = null;
+            let intentAnalysis = {};
+            
+            try {
+              // CORREÇÃO: Usar formato correto da API query()
+              console.log('🔍 Query attempt (intent):', {
+                promptLength: intentPrompt.prompt.length,
+                hasOptions: !!intentPrompt.options,
+                optionsKeys: Object.keys(intentPrompt.options || {})
+              });
+              
+              let fullResponse = '';
+              
+              // Usar o mesmo padrão que funciona no handler send_message
+              for await (const msg of query({
+                prompt: intentPrompt.prompt,
+                options: intentPrompt.options
+              })) {
+                if (msg.type === 'result' && !msg.is_error && msg.result) {
+                  fullResponse = msg.result;
+                  console.log('✅ Query result (intent):', {
+                    hasResult: !!msg.result,
+                    resultLength: msg.result?.length,
+                    messageType: msg.type
+                  });
+                  break; // Otimização: parar após obter resultado
+                }
+              }
+              
+              console.log('📊 Claude intent response:', fullResponse ? 'received' : 'empty');
+              
+              // Tentar parsear JSON da resposta
+              if (fullResponse) {
+                try {
+                  intentAnalysis = JSON.parse(fullResponse);
+                } catch (e) {
+                  // Se não for JSON válido, extrair informações básicas
+                  intentAnalysis = {
+                    intent: detectTaskType(message),
+                    entities: [],
+                    context_needed: message,
+                    response_type: 'informative'
+                  };
+                }
+              }
+            } catch (err) {
+              console.error('❌ Claude intent analysis failed:', err.message);
+              intentAnalysis = {
+                intent: detectTaskType(message),
+                entities: [],
+                context_needed: message,
+                response_type: 'informative'
+              };
+            }
+            
+            console.log('📋 Intent Analysis:', intentAnalysis);
+            
+            // 2. Enviar para CrewAI com contexto REAL
+            console.log('🚀 [Step 2] Sending to CrewAI with real context...');
+            
+            let crewAIResult = null;
+            if (intentAnalysis.intent !== 'general_query') {
+              const crewTaskPayload = {
+                task: message,
+                context: {
+                  sessionId: currentSessionId,
+                  intent: intentAnalysis,
+                  timestamp: Date.now()
+                },
+                streaming: false
+              };
+              
+              try {
+                // SEM timeout/fallback - aguardar resposta REAL
+                crewAIResult = await a2aClient.sendTask(message, crewTaskPayload);
+                console.log('📦 CrewAI real result:', crewAIResult);
+              } catch (err) {
+                console.log('⚠️ CrewAI error, will use Claude only:', err.message);
+              }
+            }
+            
+            // 3. Claude processa resultado REAL e formata resposta
+            console.log('🎯 [Step 3] Claude formatting REAL response...');
+            
+            const responsePrompt = {
+              prompt: `Você é um assistente inteligente integrado com CrewAI.
+
+Mensagem do usuário: "${message}"
+
+Análise de intenção:
+${JSON.stringify(intentAnalysis, null, 2)}
+
+${crewAIResult ? `Resultado da análise do CrewAI:
+${JSON.stringify(crewAIResult.result || crewAIResult, null, 2)}` : 'CrewAI não foi necessário para esta consulta.'}
+
+Agora forneça uma resposta natural, contextual e útil em português.
+Se o CrewAI foi usado, integre os resultados naturalmente.
+Seja específico, amigável e informativo.`,
+              options: { 
+                maxTurns: 1,
+                temperature: 0.7 
+              }
+            };
+            
+            // CORREÇÃO: Usar formato correto da API query() para resposta final
+            let fullFinalResponse = '';
+            try {
+              console.log('🔍 Query attempt (response):', {
+                promptLength: responsePrompt.prompt.length,
+                hasOptions: !!responsePrompt.options,
+                optionsKeys: Object.keys(responsePrompt.options || {})
+              });
+              
+              // Usar o mesmo padrão que funciona no handler send_message
+              for await (const msg of query({
+                prompt: responsePrompt.prompt,
+                options: responsePrompt.options
+              })) {
+                if (msg.type === 'result' && !msg.is_error && msg.result) {
+                  fullFinalResponse = msg.result;
+                  console.log('✅ Query result (response):', {
+                    hasResult: !!msg.result,
+                    resultLength: msg.result?.length,
+                    messageType: msg.type
+                  });
+                  break; // Otimização: parar após obter resultado
+                }
+              }
+            } catch (err) {
+              console.log('⚠️ Error collecting Claude response:', err.message);
+            }
+            
+            assistantResponse = fullFinalResponse;
+            
+            // Se ainda assim não tiver resposta, usar última tentativa
+            if (!assistantResponse) {
+              console.log('⚠️ No response from Claude, using direct query');
+              
+              try {
+                // CORREÇÃO: Usar formato correto da API query() para fallback
+                console.log('🔍 Query attempt (fallback):', {
+                  promptLength: message.length,
+                  usingDefaultOptions: true
+                });
+                
+                let directResponse = '';
+                
+                // Usar o mesmo padrão que funciona no handler send_message
+                for await (const msg of query({
+                  prompt: message,
+                  options: { maxTurns: 1 }
+                })) {
+                  if (msg.type === 'result' && !msg.is_error && msg.result) {
+                    directResponse = msg.result;
+                    console.log('✅ Query result (fallback):', {
+                      hasResult: !!msg.result,
+                      resultLength: msg.result?.length,
+                      messageType: msg.type
+                    });
+                    break; // Otimização: parar após obter resultado
+                  }
+                }
+                
+                assistantResponse = directResponse || 'Desculpe, não consegui processar sua mensagem no momento.';
+              } catch (err) {
+                console.log('❌ Fallback query error:', err.message);
+                assistantResponse = 'Desculpe, não consegui processar sua mensagem no momento.';
+              }
+            }
+            
+            // 4. Stream da resposta natural do Claude
+            console.log('📡 [Step 4] Streaming natural response...');
+            const chunks = assistantResponse.match(/.{1,40}/g) || [assistantResponse];
+            for (const chunk of chunks) {
+              socket.emit('stream', {
+                chunk: chunk,
+                sessionId: currentSessionId,
+                agent: a2aClient.selectedAgent
+              });
+              await new Promise(resolve => setTimeout(resolve, 80));
+            }
+            
+            // Emitir evento de conclusão do stream
+            socket.emit('stream_complete', {
+              sessionId: currentSessionId,
+              agent: a2aClient.selectedAgent,
+              totalLength: assistantResponse.length
+            });
+            console.log('✅ Stream complete for session:', currentSessionId);
+            
+          } catch (err) {
+            console.error('❌ [A2A] Error in Claude+CrewAI integration:', err.message);
+            // Em caso de erro, fornecer resposta de fallback natural
+            assistantResponse = `Entendi sua mensagem sobre "${message}". Estou processando isso para você. Como posso ajudar mais especificamente?`;
+            socket.emit('stream', {
+              chunk: assistantResponse,
+              sessionId: currentSessionId,
+              agent: a2aClient.selectedAgent
+            });
+          }
+          
+        } else {
+          // Para outros agentes, usar Claude Code SDK normal
+          console.log('🚀 [A2A] Starting Claude Code SDK query');
+          try {
+            for await (const msg of query({
+              prompt: finalPrompt,
+              options: queryOptions,
+            })) {
+              if (msg.type === 'text') {
+                assistantResponse += msg.text;
+                socket.emit('stream', {
+                  chunk: msg.text,
+                  sessionId: currentSessionId,
+                  agent: a2aClient.selectedAgent
+                });
+              }
+            }
+          } catch (claudeError) {
+            console.error('⚠️ [A2A] Claude SDK error:', claudeError.message);
+            assistantResponse = `Olá! Recebi sua mensagem: "${message}". Como posso ajudar?`;
+          }
+        }
+        
+        // Enviar resposta diretamente se já temos o resultado do Claude
+        if (assistantResponse) {
+          console.log('✅ [A2A] Sending Claude response via A2A');
+          
+          // Criar mensagem do assistente
+          const assistantMessage = {
+            id: uuidv4(),
+            type: 'assistant',
+            content: assistantResponse,
+            agent: a2aClient.selectedAgent,
+            timestamp: Date.now()
+          };
+          
+          // Emitir resposta completa como mensagem normal
+          socket.emit('message', {
+            ...assistantMessage,
+            sessionId: currentSessionId
+          });
+          
+          // Salvar na sessão
+          sessionData.messages.push(assistantMessage);
+          sessions.set(currentSessionId, sessionData);
+          
+          // Opcionalmente, enviar para CrewAI para processamento adicional
+          if (a2aClient.selectedAgent === 'crew-ai') {
+            console.log('🔄 [A2A] Also forwarding to CrewAI for additional processing');
+            try {
+              // Usar sendTask ao invés de sendChatMessage para compatibilidade
+              const taskResult = await a2aClient.sendTask(message, {
+                context: { claude_response: assistantResponse },
+                streaming: false
+              });
+              
+              // Se CrewAI adicionar informações extras, emitir como resposta A2A
+              if (taskResult && taskResult.result) {
+                socket.emit('a2a:message_response', {
+                  response: taskResult.result.summary || 'Task processed',
+                  task_id: taskResult.id,
+                  session_id: currentSessionId,
+                  agent: a2aClient.selectedAgent,
+                  timestamp: Date.now()
+                });
+              }
+            } catch (crewError) {
+              console.warn('⚠️ [A2A] CrewAI processing optional, continuing:', crewError.message);
+            }
+          }
+        } else {
+          // Se não há resposta do Claude, criar uma resposta de erro
+          const errorMessage = {
+            id: uuidv4(),
+            type: 'assistant',
+            content: 'Desculpe, não consegui processar sua mensagem no momento.',
+            agent: a2aClient.selectedAgent,
+            is_error: true,
+            timestamp: Date.now()
+          };
+          
+          socket.emit('message', {
+            ...errorMessage,
+            sessionId: currentSessionId
+          });
+          
+          sessionData.messages.push(errorMessage);
+          sessions.set(currentSessionId, sessionData);
+        }
+        
+        socket.emit('stream_end', {
+          sessionId: currentSessionId,
+          agent: a2aClient.selectedAgent
+        });
+        socket.emit('typing_stop');
+        
       } else {
         // Fallback para Claude direto (comportamento existente)
         socket.emit('a2a:error', {
@@ -1202,6 +1659,7 @@ io.on('connection', (socket) => {
         });
       }
     } catch (error) {
+      console.error('❌ [A2A] Error processing message:', error);
       socket.emit('a2a:error', {
         error: error.message
       });

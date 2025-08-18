@@ -1,0 +1,728 @@
+🚀 Initializing Chat Server Systems...
+📊 Connecting to Neo4j via MCP...
+🔌 Conectando MCP Client ao Neo4j...
+🚀 Enhanced Claude Code SDK Server running on port 8080
+📋 Features enabled:
+  • Real-time streaming chat
+  • File upload and analysis
+  • Session management
+  • Conversation export
+  • Advanced Claude Code SDK integration
+  • WebSocket connections for real-time updates
+❌ Erro conectando MCP: Error: Timeout conectando ao MCP
+    at Timeout._onTimeout (/Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/mcp/client.js:101:16)
+    at listOnTimeout (node:internal/timers:608:17)
+    at process.processTimers (node:internal/timers:543:7)
+⚠️ MCP Client failed (continuing without memory): Timeout conectando ao MCP
+🤖 Discovering A2A agents...
+Failed to connect to agent claude: TypeError: fetch failed
+    at node:internal/deps/undici/undici:15422:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async A2AClient.registerAgent (/Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/a2a/client.js:33:24)
+    at async initializeSystem (/Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/server.js:101:7) {
+  [cause]: AggregateError [ECONNREFUSED]: 
+      at internalConnectMultiple (node:net:1134:18)
+      at afterConnectMultiple (node:net:1715:7) {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+A2A Agent registered: claude
+A2A Agent registered: crew-ai
+✅ A2A agents discovered and registered
+✅ Context Engine initialized
+
+📋 System Status:
+  MCP (Neo4j): ❌ Disconnected
+  A2A Agents: ✅ claude, crew-ai
+  Context Engine: ✅ Active
+
+Client connected: bBkHXB7dirLqYJCnAAAB
+📥 [TRACE] Received send_message event: {
+  socketId: 'bBkHXB7dirLqYJCnAAAB',
+  dataKeys: [ 'message', 'sessionId' ],
+  messageLength: 32,
+  sessionId: 'validation-claude-1755492475703',
+  timestamp: '2025-08-18T04:47:55.706Z'
+}
+✅ [TRACE] Message validation passed: {
+  messagePreview: 'Olá, responda com OK se funciona',
+  sessionId: 'validation-claude-1755492475703',
+  hasSystemPrompt: false
+}
+📤 [TRACE] Emitting user message: {
+  messageId: 'd8c4c343-3577-4520-b19b-2ff3f197fe1a',
+  sessionId: 'validation-claude-1755492475703',
+  contentLength: 32
+}
+⏳ [TRACE] Starting Claude query with options: {
+  sessionId: 'validation-claude-1755492475703',
+  queryOptions: { maxTurns: 5 },
+  finalPromptLength: 32
+}
+🤖 [TRACE] Starting Claude Code query iteration
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print Olá, responda com OK se funciona
+🔄 [TRACE] Claude Code message received: {
+  type: 'system',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [
+    'type',
+    'subtype',
+    'cwd',
+    'session_id',
+    'tools',
+    'mcp_servers',
+    'model',
+    'permissionMode',
+    'apiKeySource'
+  ]
+}
+🔄 [TRACE] Claude Code message received: {
+  type: 'assistant',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+📝 [TRACE] Got assistant message: {
+  messageType: 'object',
+  messageLength: 29,
+  preview: '[{"type":"text","text":"OK"}]...',
+  sessionId: 'validation-claude-1755492475703'
+}
+📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
+🔄 [TRACE] Claude Code message received: {
+  type: 'result',
+  hasResult: true,
+  isError: false,
+  resultLength: 2,
+  messageKeys: [
+    'type',
+    'subtype',
+    'is_error',
+    'duration_ms',
+    'duration_api_ms',
+    'num_turns',
+    'result',
+    'session_id',
+    'total_cost_usd',
+    'usage'
+  ]
+}
+✅ [TRACE] Got successful Claude response: {
+  responseLength: 2,
+  preview: 'OK...',
+  sessionId: 'validation-claude-1755492475703',
+  metadata: { cost: 1.0592217, duration: 2264, turns: 1, is_error: false }
+}
+📤 [TRACE] Emitting message_stream event: { resultType: 'string', resultLength: 2, resultPreview: 'OK' }
+🏁 [TRACE] Claude query completed, processing final response
+💾 [TRACE] Saving assistant message to session: {
+  messageId: 'a9186c52-6b7a-4ea7-9baa-a9940bbb7599',
+  sessionId: 'validation-claude-1755492475703',
+  contentLength: 2,
+  metadata: { cost: 1.0592217, duration: 2264, turns: 1, is_error: false }
+}
+📤 [TRACE] Emitting message_complete event: {
+  messageId: 'a9186c52-6b7a-4ea7-9baa-a9940bbb7599',
+  sessionId: 'validation-claude-1755492475703'
+}
+🤖 [A2A] Processing message with agent: crew-ai
+🤖 [A2A] REAL Pipeline: Claude + CrewAI
+🧠 [Step 1] Claude analyzing intent...
+🔍 Query attempt (intent): {
+  promptLength: 354,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Analise esta mensagem e extraia a intenção:
+"Teste CrewAI funcionando?"
+
+Retorne um JSON com:
+- intent: (data_extraction|pattern_analysis|report_generation|general_query)
+- entities: lista de entidades mencionadas
+- context_needed: informações necessárias
+- response_type: (informative|analytical|actionable)
+
+Responda APENAS com o JSON, sem explicações.
+✅ Query result (intent): { hasResult: true, resultLength: 180, messageType: 'result' }
+📊 Claude intent response: received
+📋 Intent Analysis: {
+  intent: 'general_query',
+  entities: [],
+  context_needed: 'Teste CrewAI funcionando?',
+  response_type: 'informative'
+}
+🚀 [Step 2] Sending to CrewAI with real context...
+🎯 [Step 3] Claude formatting REAL response...
+🔍 Query attempt (response): {
+  promptLength: 475,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Você é um assistente inteligente integrado com CrewAI.
+
+Mensagem do usuário: "Teste CrewAI funcionando?"
+
+Análise de intenção:
+{
+  "intent": "general_query",
+  "entities": [],
+  "context_needed": "Teste CrewAI funcionando?",
+  "response_type": "informative"
+}
+
+CrewAI não foi necessário para esta consulta.
+
+Agora forneça uma resposta natural, contextual e útil em português.
+Se o CrewAI foi usado, integre os resultados naturalmente.
+Seja específico, amigável e informativo.
+Client disconnected: bBkHXB7dirLqYJCnAAAB
+✅ Query result (response): { hasResult: true, resultLength: 247, messageType: 'result' }
+📡 [Step 4] Streaming natural response...
+✅ Stream complete for session: validation-crew-1755492483803
+✅ [A2A] Sending Claude response via A2A
+🔄 [A2A] Also forwarding to CrewAI for additional processing
+Client connected: Klqg5ioYJIdo35XrAAAD
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Client connected: DMs-fKHLVXWLsUSNAAAF
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+🤖 [A2A] Processing message with agent: crew-ai
+🤖 [A2A] REAL Pipeline: Claude + CrewAI
+🧠 [Step 1] Claude analyzing intent...
+🔍 Query attempt (intent): {
+  promptLength: 345,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Analise esta mensagem e extraia a intenção:
+"do que se trata?"
+
+Retorne um JSON com:
+- intent: (data_extraction|pattern_analysis|report_generation|general_query)
+- entities: lista de entidades mencionadas
+- context_needed: informações necessárias
+- response_type: (informative|analytical|actionable)
+
+Responda APENAS com o JSON, sem explicações.
+🗑️ Deleting session: validation-crew-1755492483803
+✅ Session deleted successfully: validation-crew-1755492483803
+✅ Query result (intent): { hasResult: true, resultLength: 182, messageType: 'result' }
+📊 Claude intent response: received
+📋 Intent Analysis: {
+  intent: 'general_query',
+  entities: [],
+  context_needed: 'do que se trata?',
+  response_type: 'informative'
+}
+🚀 [Step 2] Sending to CrewAI with real context...
+🎯 [Step 3] Claude formatting REAL response...
+🔍 Query attempt (response): {
+  promptLength: 457,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Você é um assistente inteligente integrado com CrewAI.
+
+Mensagem do usuário: "do que se trata?"
+
+Análise de intenção:
+{
+  "intent": "general_query",
+  "entities": [],
+  "context_needed": "do que se trata?",
+  "response_type": "informative"
+}
+
+CrewAI não foi necessário para esta consulta.
+
+Agora forneça uma resposta natural, contextual e útil em português.
+Se o CrewAI foi usado, integre os resultados naturalmente.
+Seja específico, amigável e informativo.
+⚠️ No response from Claude, using direct query
+🔍 Query attempt (fallback): { promptLength: 16, usingDefaultOptions: true }
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print do que se trata?
+📡 [Step 4] Streaming natural response...
+✅ Stream complete for session: validation-claude-1755492475703
+✅ [A2A] Sending Claude response via A2A
+🔄 [A2A] Also forwarding to CrewAI for additional processing
+🗑️ Deleting session: 2af1ba18-d7d1-4bc2-9eae-94998b52bb1f
+✅ Session deleted successfully: 2af1ba18-d7d1-4bc2-9eae-94998b52bb1f
+🤖 [A2A] Processing message with agent: crew-ai
+🤖 [A2A] REAL Pipeline: Claude + CrewAI
+🧠 [Step 1] Claude analyzing intent...
+🔍 Query attempt (intent): {
+  promptLength: 331,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Analise esta mensagem e extraia a intenção:
+"oi"
+
+Retorne um JSON com:
+- intent: (data_extraction|pattern_analysis|report_generation|general_query)
+- entities: lista de entidades mencionadas
+- context_needed: informações necessárias
+- response_type: (informative|analytical|actionable)
+
+Responda APENAS com o JSON, sem explicações.
+✅ Query result (intent): { hasResult: true, resultLength: 163, messageType: 'result' }
+📊 Claude intent response: received
+📋 Intent Analysis: {
+  intent: 'general_query',
+  entities: [],
+  context_needed: 'oi',
+  response_type: 'informative'
+}
+🚀 [Step 2] Sending to CrewAI with real context...
+🎯 [Step 3] Claude formatting REAL response...
+🔍 Query attempt (response): {
+  promptLength: 429,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Você é um assistente inteligente integrado com CrewAI.
+
+Mensagem do usuário: "oi"
+
+Análise de intenção:
+{
+  "intent": "general_query",
+  "entities": [],
+  "context_needed": "oi",
+  "response_type": "informative"
+}
+
+CrewAI não foi necessário para esta consulta.
+
+Agora forneça uma resposta natural, contextual e útil em português.
+Se o CrewAI foi usado, integre os resultados naturalmente.
+Seja específico, amigável e informativo.
+✅ Query result (response): { hasResult: true, resultLength: 36, messageType: 'result' }
+📡 [Step 4] Streaming natural response...
+✅ Stream complete for session: a1f876c4-9abb-46f5-aaf4-2240b2956d43
+✅ [A2A] Sending Claude response via A2A
+🔄 [A2A] Also forwarding to CrewAI for additional processing
+🤖 [A2A] Processing message with agent: crew-ai
+🤖 [A2A] REAL Pipeline: Claude + CrewAI
+🧠 [Step 1] Claude analyzing intent...
+🔍 Query attempt (intent): {
+  promptLength: 365,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Analise esta mensagem e extraia a intenção:
+"quero interagir com o agente Crew-ai"
+
+Retorne um JSON com:
+- intent: (data_extraction|pattern_analysis|report_generation|general_query)
+- entities: lista de entidades mencionadas
+- context_needed: informações necessárias
+- response_type: (informative|analytical|actionable)
+
+Responda APENAS com o JSON, sem explicações.
+(node:31619) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Query result (intent): { hasResult: true, resultLength: 224, messageType: 'result' }
+📊 Claude intent response: received
+📋 Intent Analysis: {
+  intent: 'general_query',
+  entities: [],
+  context_needed: 'quero interagir com o agente Crew-ai',
+  response_type: 'informative'
+}
+🚀 [Step 2] Sending to CrewAI with real context...
+🎯 [Step 3] Claude formatting REAL response...
+🔍 Query attempt (response): {
+  promptLength: 497,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Você é um assistente inteligente integrado com CrewAI.
+
+Mensagem do usuário: "quero interagir com o agente Crew-ai"
+
+Análise de intenção:
+{
+  "intent": "general_query",
+  "entities": [],
+  "context_needed": "quero interagir com o agente Crew-ai",
+  "response_type": "informative"
+}
+
+CrewAI não foi necessário para esta consulta.
+
+Agora forneça uma resposta natural, contextual e útil em português.
+Se o CrewAI foi usado, integre os resultados naturalmente.
+Seja específico, amigável e informativo.
+Client disconnected: Klqg5ioYJIdo35XrAAAD
+Client disconnected: DMs-fKHLVXWLsUSNAAAF
+Client connected: KNisc2qIUO1qIhV9AAAI
+Client connected: gPB_osyCodOO55dlAAAJ
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+⚠️ No response from Claude, using direct query
+🔍 Query attempt (fallback): { promptLength: 36, usingDefaultOptions: true }
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print quero interagir com o agente Crew-ai
+🤖 [A2A] Processing message with agent: crew-ai
+🤖 [A2A] REAL Pipeline: Claude + CrewAI
+🧠 [Step 1] Claude analyzing intent...
+🔍 Query attempt (intent): {
+  promptLength: 356,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Analise esta mensagem e extraia a intenção:
+"consigo falar com o agente?"
+
+Retorne um JSON com:
+- intent: (data_extraction|pattern_analysis|report_generation|general_query)
+- entities: lista de entidades mencionadas
+- context_needed: informações necessárias
+- response_type: (informative|analytical|actionable)
+
+Responda APENAS com o JSON, sem explicações.
+📡 [Step 4] Streaming natural response...
+✅ Stream complete for session: a1f876c4-9abb-46f5-aaf4-2240b2956d43
+✅ [A2A] Sending Claude response via A2A
+🔄 [A2A] Also forwarding to CrewAI for additional processing
+✅ Query result (intent): { hasResult: true, resultLength: 209, messageType: 'result' }
+📊 Claude intent response: received
+📋 Intent Analysis: {
+  intent: 'general_query',
+  entities: [],
+  context_needed: 'consigo falar com o agente?',
+  response_type: 'informative'
+}
+🚀 [Step 2] Sending to CrewAI with real context...
+🎯 [Step 3] Claude formatting REAL response...
+🔍 Query attempt (response): {
+  promptLength: 479,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Você é um assistente inteligente integrado com CrewAI.
+
+Mensagem do usuário: "consigo falar com o agente?"
+
+Análise de intenção:
+{
+  "intent": "general_query",
+  "entities": [],
+  "context_needed": "consigo falar com o agente?",
+  "response_type": "informative"
+}
+
+CrewAI não foi necessário para esta consulta.
+
+Agora forneça uma resposta natural, contextual e útil em português.
+Se o CrewAI foi usado, integre os resultados naturalmente.
+Seja específico, amigável e informativo.
+✅ Query result (response): { hasResult: true, resultLength: 464, messageType: 'result' }
+📡 [Step 4] Streaming natural response...
+✅ Stream complete for session: validation-claude-1755492475703
+✅ [A2A] Sending Claude response via A2A
+🔄 [A2A] Also forwarding to CrewAI for additional processing
+Client connected: rLCYtBYeIsmHysaMAAAL
+Client disconnected: rLCYtBYeIsmHysaMAAAL
+🤖 [A2A] Processing message with agent: crew-ai
+🤖 [A2A] REAL Pipeline: Claude + CrewAI
+🧠 [Step 1] Claude analyzing intent...
+🔍 Query attempt (intent): {
+  promptLength: 465,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Analise esta mensagem e extraia a intenção:
+"esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?"
+
+Retorne um JSON com:
+- intent: (data_extraction|pattern_analysis|report_generation|general_query)
+- entities: lista de entidades mencionadas
+- context_needed: informações necessárias
+- response_type: (informative|analytical|actionable)
+
+Responda APENAS com o JSON, sem explicações.
+Client connected: Na3jJ4hZraMtU_FGAAAN
+📥 [TRACE] Received send_message event: {
+  socketId: 'Na3jJ4hZraMtU_FGAAAN',
+  dataKeys: [ 'message', 'sessionId' ],
+  messageLength: 42,
+  sessionId: 'validation-continue-1755492944048',
+  timestamp: '2025-08-18T04:55:44.056Z'
+}
+✅ [TRACE] Message validation passed: {
+  messagePreview: 'Olá! Vamos testar se você está funcionando',
+  sessionId: 'validation-continue-1755492944048',
+  hasSystemPrompt: false
+}
+📤 [TRACE] Emitting user message: {
+  messageId: 'b010bb68-d310-4701-b7de-75571fae07b9',
+  sessionId: 'validation-continue-1755492944048',
+  contentLength: 42
+}
+⏳ [TRACE] Starting Claude query with options: {
+  sessionId: 'validation-continue-1755492944048',
+  queryOptions: { maxTurns: 5 },
+  finalPromptLength: 42
+}
+🤖 [TRACE] Starting Claude Code query iteration
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print Olá! Vamos testar se você está funcionando
+🔄 [TRACE] Claude Code message received: {
+  type: 'system',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [
+    'type',
+    'subtype',
+    'cwd',
+    'session_id',
+    'tools',
+    'mcp_servers',
+    'model',
+    'permissionMode',
+    'apiKeySource'
+  ]
+}
+🔄 [TRACE] Claude Code message received: {
+  type: 'assistant',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+📝 [TRACE] Got assistant message: {
+  messageType: 'object',
+  messageLength: 98,
+  preview: '[{"type":"text","text":"Olá! Sim, estou funcionando perfeitamente. Como posso ajudar você hoje?"}]...',
+  sessionId: 'validation-continue-1755492944048'
+}
+📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
+🔄 [TRACE] Claude Code message received: {
+  type: 'result',
+  hasResult: true,
+  isError: false,
+  resultLength: 71,
+  messageKeys: [
+    'type',
+    'subtype',
+    'is_error',
+    'duration_ms',
+    'duration_api_ms',
+    'num_turns',
+    'result',
+    'session_id',
+    'total_cost_usd',
+    'usage'
+  ]
+}
+✅ [TRACE] Got successful Claude response: {
+  responseLength: 71,
+  preview: 'Olá! Sim, estou funcionando perfeitamente. Como posso ajudar você hoje?...',
+  sessionId: 'validation-continue-1755492944048',
+  metadata: {
+    cost: 0.21837550000000003,
+    duration: 3365,
+    turns: 1,
+    is_error: false
+  }
+}
+📤 [TRACE] Emitting message_stream event: {
+  resultType: 'string',
+  resultLength: 71,
+  resultPreview: 'Olá! Sim, estou funcionando perfeitamente. Como posso ajudar você hoje?'
+}
+🏁 [TRACE] Claude query completed, processing final response
+💾 [TRACE] Saving assistant message to session: {
+  messageId: 'de37c504-b633-4609-931e-3385ddf052a4',
+  sessionId: 'validation-continue-1755492944048',
+  contentLength: 71,
+  metadata: {
+    cost: 0.21837550000000003,
+    duration: 3365,
+    turns: 1,
+    is_error: false
+  }
+}
+📤 [TRACE] Emitting message_complete event: {
+  messageId: 'de37c504-b633-4609-931e-3385ddf052a4',
+  sessionId: 'validation-continue-1755492944048'
+}
+🤖 [A2A] Processing message with agent: crew-ai
+🤖 [A2A] REAL Pipeline: Claude + CrewAI
+🧠 [Step 1] Claude analyzing intent...
+🔍 Query attempt (intent): {
+  promptLength: 363,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Analise esta mensagem e extraia a intenção:
+"Analise os dados: A=10, B=20, C=30"
+
+Retorne um JSON com:
+- intent: (data_extraction|pattern_analysis|report_generation|general_query)
+- entities: lista de entidades mencionadas
+- context_needed: informações necessárias
+- response_type: (informative|analytical|actionable)
+
+Responda APENAS com o JSON, sem explicações.
+✅ Query result (intent): { hasResult: true, resultLength: 280, messageType: 'result' }
+📊 Claude intent response: received
+📋 Intent Analysis: {
+  intent: 'data_extraction',
+  entities: [],
+  context_needed: 'esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?',
+  response_type: 'informative'
+}
+🚀 [Step 2] Sending to CrewAI with real context...
+📦 CrewAI real result: {
+  id: 'task-1755492955783-2kait76s1',
+  agent: 'crew-ai',
+  task: 'esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?',
+  options: {
+    task: 'esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?',
+    context: {
+      sessionId: 'validation-claude-1755492475703',
+      intent: [Object],
+      timestamp: 1755492955783
+    },
+    streaming: false
+  },
+  status: 'running',
+  created_at: '2025-08-18T04:55:55.783Z',
+  stream: [],
+  remote_id: 'task-106b2ae4'
+}
+🎯 [Step 3] Claude formatting REAL response...
+🔍 Query attempt (response): {
+  promptLength: 1614,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Você é um assistente inteligente integrado com CrewAI.
+
+Mensagem do usuário: "esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?"
+
+Análise de intenção:
+{
+  "intent": "data_extraction",
+  "entities": [],
+  "context_needed": "esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?",
+  "response_type": "informative"
+}
+
+Resultado da análise do CrewAI:
+{
+  "id": "task-1755492955783-2kait76s1",
+  "agent": "crew-ai",
+  "task": "esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?",
+  "options": {
+    "task": "esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?",
+    "context": {
+      "sessionId": "validation-claude-1755492475703",
+      "intent": {
+        "intent": "data_extraction",
+        "entities": [],
+        "context_needed": "esse agente pode extrair informações estruturadas chave seria o que ele tem pra me pergunta e o valor que vou passar pra ele seria isso?",
+        "response_type": "informative"
+      },
+      "timestamp": 1755492955783
+    },
+    "streaming": false
+  },
+  "status": "running",
+  "created_at": "2025-08-18T04:55:55.783Z",
+  "stream": [],
+  "remote_id": "task-106b2ae4"
+}
+
+Agora forneça uma resposta natural, contextual e útil em português.
+Se o CrewAI foi usado, integre os resultados naturalmente.
+Seja específico, amigável e informativo.
+✅ Query result (intent): { hasResult: true, resultLength: 212, messageType: 'result' }
+📊 Claude intent response: received
+📋 Intent Analysis: {
+  intent: 'data_extraction',
+  entities: [],
+  context_needed: 'Analise os dados: A=10, B=20, C=30',
+  response_type: 'informative'
+}
+🚀 [Step 2] Sending to CrewAI with real context...
+📦 CrewAI real result: {
+  id: 'task-1755492965055-vyghijcc0',
+  agent: 'crew-ai',
+  task: 'Analise os dados: A=10, B=20, C=30',
+  options: {
+    task: 'Analise os dados: A=10, B=20, C=30',
+    context: {
+      sessionId: 'validation-continue-1755492944048',
+      intent: [Object],
+      timestamp: 1755492965055
+    },
+    streaming: false
+  },
+  status: 'running',
+  created_at: '2025-08-18T04:56:05.055Z',
+  stream: [],
+  remote_id: 'task-4eb2f85d'
+}
+🎯 [Step 3] Claude formatting REAL response...
+🔍 Query attempt (response): {
+  promptLength: 1106,
+  hasOptions: true,
+  optionsKeys: [ 'maxTurns', 'temperature' ]
+}
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Você é um assistente inteligente integrado com CrewAI.
+
+Mensagem do usuário: "Analise os dados: A=10, B=20, C=30"
+
+Análise de intenção:
+{
+  "intent": "data_extraction",
+  "entities": [],
+  "context_needed": "Analise os dados: A=10, B=20, C=30",
+  "response_type": "informative"
+}
+
+Resultado da análise do CrewAI:
+{
+  "id": "task-1755492965055-vyghijcc0",
+  "agent": "crew-ai",
+  "task": "Analise os dados: A=10, B=20, C=30",
+  "options": {
+    "task": "Analise os dados: A=10, B=20, C=30",
+    "context": {
+      "sessionId": "validation-continue-1755492944048",
+      "intent": {
+        "intent": "data_extraction",
+        "entities": [],
+        "context_needed": "Analise os dados: A=10, B=20, C=30",
+        "response_type": "informative"
+      },
+      "timestamp": 1755492965055
+    },
+    "streaming": false
+  },
+  "status": "running",
+  "created_at": "2025-08-18T04:56:05.055Z",
+  "stream": [],
+  "remote_id": "task-4eb2f85d"
+}
+
+Agora forneça uma resposta natural, contextual e útil em português.
+Se o CrewAI foi usado, integre os resultados naturalmente.
+Seja específico, amigável e informativo.
+Client disconnected: Na3jJ4hZraMtU_FGAAAN
+✅ Query result (response): { hasResult: true, resultLength: 721, messageType: 'result' }
+📡 [Step 4] Streaming natural response...
+✅ Stream complete for session: validation-claude-1755492475703
+✅ [A2A] Sending Claude response via A2A
+🔄 [A2A] Also forwarding to CrewAI for additional processing
+✅ Query result (response): { hasResult: true, resultLength: 465, messageType: 'result' }
+📡 [Step 4] Streaming natural response...
+✅ Stream complete for session: validation-continue-1755492944048
+✅ [A2A] Sending Claude response via A2A
+🔄 [A2A] Also forwarding to CrewAI for additional processing
