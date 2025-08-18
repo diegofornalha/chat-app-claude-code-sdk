@@ -1112,7 +1112,7 @@ Este é o **Claude Code Chat** - uma aplicação avançada de chat multi-agente 
 ${projectContext}
 
 ## 📡 Status:
-- Conexão: ${connected ? '✅ Conectado' : '❌ Desconectado'}
+- Conexão: ${socket.connected ? '✅ Conectado' : '❌ Desconectado'}
 - Agentes disponíveis: Claude, Crew-AI, Context Engine
 - Memória: ${contextEngine ? 'Ativa' : 'Inativa'}
 - Total de arquivos: ${projectStructure.total.files}
@@ -1144,7 +1144,7 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
 Este é o **Claude Code Chat** - uma aplicação avançada de chat multi-agente.
 
 ## 📡 Status:
-- Conexão: ${connected ? '✅ Conectado' : '❌ Desconectado'}
+- Conexão: ${socket.connected ? '✅ Conectado' : '❌ Desconectado'}
 - Agentes disponíveis: Claude, Crew-AI, Context Engine
 - Memória: ${contextEngine ? 'Ativa' : 'Inativa'}
 
@@ -1600,7 +1600,7 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
       
       socket.emit('error', {
         ...errorMessage,
-        sessionId: currentSessionId || 'default'
+        sessionId: data?.sessionId || 'default'
       });
     }
   });

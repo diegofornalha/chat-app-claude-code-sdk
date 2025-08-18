@@ -968,23 +968,82 @@ export default function ClaudeChat() {
 
   // Helper function to safely convert message content to string
   const getMessageContent = (content: any): string => {
+    // Se já é string, retorna direto
     if (typeof content === 'string') {
       return content;
     }
-    if (typeof content === 'object' && content !== null) {
-      // Check if it's an error object
-      if (content.error || content.message) {
-        return content.error || content.message;
-      }
-      // Check if it has a text field
-      if (content.text) {
-        return content.text;
-      }
-      // Otherwise return empty to avoid [object Object]
-      console.warn('Unexpected message content format:', content);
+    
+    // Se é null ou undefined, retorna vazio
+    if (content === null || content === undefined) {
       return '';
     }
-    return '';
+    
+    // Se é objeto, tenta extrair o conteúdo
+    if (typeof content === 'object') {
+      // Ordem de prioridade para campos comuns
+      // 1. Campos de erro
+      if (content.error) {
+        // Se error também é objeto, tenta extrair mensagem dele
+        if (typeof content.error === 'object' && content.error.message) {
+          return content.error.message;
+        }
+        return String(content.error);
+      }
+      
+      // 2. Campo message
+      if (content.message) {
+        return String(content.message);
+      }
+      
+      // 3. Campo content (objetos aninhados)
+      if (content.content) {
+        return getMessageContent(content.content); // Recursão para objetos aninhados
+      }
+      
+      // 4. Campo text
+      if (content.text) {
+        return String(content.text);
+      }
+      
+      // 5. Campo response (para respostas de API)
+      if (content.response) {
+        return String(content.response);
+      }
+      
+      // 6. Campo details (para mensagens de erro detalhadas)
+      if (content.details) {
+        return String(content.details);
+      }
+      
+      // 7. Campo result (para resultados de operações)
+      if (content.result) {
+        return String(content.result);
+      }
+      
+      // 8. Se é um array, junta os elementos
+      if (Array.isArray(content)) {
+        return content.map(item => getMessageContent(item)).filter(Boolean).join('\n');
+      }
+      
+      // 9. Tenta JSON.stringify para objetos complexos (útil para debug)
+      try {
+        const jsonStr = JSON.stringify(content, null, 2);
+        // Só retorna JSON se não for muito grande
+        if (jsonStr.length < 1000) {
+          console.warn('Complex object in message content, displaying as JSON:', content);
+          return jsonStr;
+        }
+      } catch (e) {
+        // Se falhar o stringify, continua
+      }
+      
+      // 10. Último recurso - avisa e retorna vazio
+      console.warn('Unable to extract string from message content:', content);
+      return '';
+    }
+    
+    // Para outros tipos (number, boolean, etc), converte para string
+    return String(content);
   };
 
   useEffect(() => {
