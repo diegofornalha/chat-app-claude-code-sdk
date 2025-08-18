@@ -2,6 +2,10 @@
 > claude-chat-backend@1.0.0 start
 > node server.js
 
+Modelo Claude Code: ID de modelo desconhecido: 'claude-3-5-sonnet-20241022'. Prosseguindo com modelo personalizado. Modelos conhecidos são: opus, sonnet
+Modelo Claude Code: ID de modelo desconhecido: 'claude-3-5-sonnet-20241022'. Prosseguindo com modelo personalizado. Modelos conhecidos são: opus, sonnet
+Modelo Claude Code: ID de modelo desconhecido: 'claude-3-5-sonnet-20241022'. Prosseguindo com modelo personalizado. Modelos conhecidos são: opus, sonnet
+Modelo Claude Code: ID de modelo desconhecido: 'claude-3-5-sonnet-20241022'. Prosseguindo com modelo personalizado. Modelos conhecidos são: opus, sonnet
 🚀 Initializing Chat Server Systems...
 📊 Connecting to Neo4j via MCP...
 🔌 Conectando MCP Client ao Neo4j...
@@ -13,46 +17,57 @@
   • Conversation export
   • Advanced Claude Code SDK integration
   • WebSocket connections for real-time updates
-Client connected: 5swjKrT_QUN9Mgy5AAAB
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client connected: 18Rl7Ybl1z_BExXaAAAD
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+❌ Erro conectando MCP: Error: Timeout conectando ao MCP
+    at Timeout._onTimeout (/Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/mcp/client.js:101:16)
+    at listOnTimeout (node:internal/timers:608:17)
+    at process.processTimers (node:internal/timers:543:7)
+⚠️ MCP Client failed (continuing without memory): Timeout conectando ao MCP
 🤖 Discovering A2A agents...
-A2A Agent registered: claude
 A2A Agent registered: crew-ai
+A2A Agent registered: helloworld
 ✅ A2A agents discovered and registered
+📋 Registered agents: [ 'crew-ai', 'helloworld' ]
 ✅ Context Engine initialized
+🎯 Initializing AI SDK v5 agents...
+Modelo Claude Code: ID de modelo desconhecido: 'claude-3-5-sonnet-20241022'. Prosseguindo com modelo personalizado. Modelos conhecidos são: opus, sonnet
+🚀 Inicializando agente: unnamed-agent
+❌ Falha ao inicializar agente unnamed-agent: Health check failed
+⚠️ AI SDK v5 initialization failed: Unhandled error. ({ agent: 'unnamed-agent', error: 'Health check failed' })
 
 📋 System Status:
   MCP (Neo4j): ❌ Disconnected
-  A2A Agents: ✅ claude, crew-ai
+  A2A Agents: ✅ crew-ai, helloworld
   Context Engine: ✅ Active
 
-Client connected: gHCku2tHH-4PXOUyAAAF
+Client connected: r7FdDLD4XE4oZYYLAAAC
+Client connected: R-pKV2ocgKiSImloAAAD
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Client disconnected: R-pKV2ocgKiSImloAAAD
+Client disconnected: r7FdDLD4XE4oZYYLAAAC
+Client connected: VRUKVnuFyE8a34xiAAAG
+Client connected: a_jgHFd5u8bSEWuSAAAH
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
 📥 [TRACE] Received send_message event: {
-  socketId: 'gHCku2tHH-4PXOUyAAAF',
-  dataKeys: [ 'message', 'sessionId' ],
-  messageLength: 27,
-  sessionId: 'demo-final-1755493051470',
-  timestamp: '2025-08-18T04:57:31.490Z'
+  socketId: 'a_jgHFd5u8bSEWuSAAAH',
+  dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
+  messageLength: 2,
+  sessionId: '',
+  timestamp: '2025-08-18T09:43:57.884Z'
 }
-✅ [TRACE] Message validation passed: {
-  messagePreview: 'Diga olá mundo em português',
-  sessionId: 'demo-final-1755493051470',
-  hasSystemPrompt: false
-}
+✅ [TRACE] Message validation passed: { messagePreview: 'oi', sessionId: '', hasSystemPrompt: false }
 📤 [TRACE] Emitting user message: {
-  messageId: 'c2139577-ef72-46b1-8d88-9d9fdb8bdb36',
-  sessionId: 'demo-final-1755493051470',
-  contentLength: 27
+  messageId: 'f01734f4-7860-4444-bd19-b6e7e748ec6a',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
+  contentLength: 2
 }
 ⏳ [TRACE] Starting Claude query with options: {
-  sessionId: 'demo-final-1755493051470',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
   queryOptions: { maxTurns: 5 },
-  finalPromptLength: 27
+  finalPromptLength: 2
 }
 🤖 [TRACE] Starting Claude Code query iteration
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print Diga olá mundo em português
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print oi
 🔄 [TRACE] Claude Code message received: {
   type: 'system',
   hasResult: false,
@@ -79,16 +94,16 @@ Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-ap
 }
 📝 [TRACE] Got assistant message: {
   messageType: 'object',
-  messageLength: 37,
-  preview: '[{"type":"text","text":"Olá mundo!"}]...',
-  sessionId: 'demo-final-1755493051470'
+  messageLength: 57,
+  preview: '[{"type":"text","text":"Olá! Como posso ajudá-lo hoje?"}]...',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872'
 }
 📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
 🔄 [TRACE] Claude Code message received: {
   type: 'result',
   hasResult: true,
   isError: false,
-  resultLength: 10,
+  resultLength: 30,
   messageKeys: [
     'type',
     'subtype',
@@ -103,102 +118,34 @@ Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-ap
   ]
 }
 ✅ [TRACE] Got successful Claude response: {
-  responseLength: 10,
-  preview: 'Olá mundo!...',
-  sessionId: 'demo-final-1755493051470',
+  responseLength: 30,
+  preview: 'Olá! Como posso ajudá-lo hoje?...',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
   metadata: {
-    cost: 0.21688269999999998,
-    duration: 2352,
+    cost: 0.060262500000000004,
+    duration: 2732,
     turns: 1,
     is_error: false
   }
 }
-📤 [TRACE] Emitting message_stream event: { resultType: 'string', resultLength: 10, resultPreview: 'Olá mundo!' }
+📤 [TRACE] Emitting message_stream event: {
+  resultType: 'string',
+  resultLength: 30,
+  resultPreview: 'Olá! Como posso ajudá-lo hoje?'
+}
 🏁 [TRACE] Claude query completed, processing final response
 💾 [TRACE] Saving assistant message to session: {
-  messageId: 'd15ccd33-1256-4f08-8fe2-83f93130c3dc',
-  sessionId: 'demo-final-1755493051470',
-  contentLength: 10,
+  messageId: 'c158e349-aa10-4d51-b218-0975d01b66f6',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872',
+  contentLength: 30,
   metadata: {
-    cost: 0.21688269999999998,
-    duration: 2352,
+    cost: 0.060262500000000004,
+    duration: 2732,
     turns: 1,
     is_error: false
   }
 }
 📤 [TRACE] Emitting message_complete event: {
-  messageId: 'd15ccd33-1256-4f08-8fe2-83f93130c3dc',
-  sessionId: 'demo-final-1755493051470'
+  messageId: 'c158e349-aa10-4d51-b218-0975d01b66f6',
+  sessionId: '67ac3f9d-6f00-45e9-a9ea-5c18744aa872'
 }
-Client disconnected: gHCku2tHH-4PXOUyAAAF
-Client disconnected: 5swjKrT_QUN9Mgy5AAAB
-Client disconnected: 18Rl7Ybl1z_BExXaAAAD
-Client connected: HLp-_xG2IzsN3oPuAAAH
-Client connected: gtrF8MCSpXcU5bG-AAAJ
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-🤖 [A2A] Processing message with agent: crew-ai
-🤖 [A2A] REAL Pipeline: Claude + CrewAI
-🧠 [Step 1] Claude analyzing intent...
-🔍 Query attempt (intent): {
-  promptLength: 331,
-  hasOptions: true,
-  optionsKeys: [ 'maxTurns', 'temperature' ]
-}
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Analise esta mensagem e extraia a intenção:
-"oi"
-
-Retorne um JSON com:
-- intent: (data_extraction|pattern_analysis|report_generation|general_query)
-- entities: lista de entidades mencionadas
-- context_needed: informações necessárias
-- response_type: (informative|analytical|actionable)
-
-Responda APENAS com o JSON, sem explicações.
-✅ Query result (intent): { hasResult: true, resultLength: 163, messageType: 'result' }
-📊 Claude intent response: received
-📋 Intent Analysis: {
-  intent: 'general_query',
-  entities: [],
-  context_needed: 'oi',
-  response_type: 'informative'
-}
-🚀 [Step 2] Sending to CrewAI with real context...
-🎯 [Step 3] Claude formatting REAL response...
-🔍 Query attempt (response): {
-  promptLength: 429,
-  hasOptions: true,
-  optionsKeys: [ 'maxTurns', 'temperature' ]
-}
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Você é um assistente inteligente integrado com CrewAI.
-
-Mensagem do usuário: "oi"
-
-Análise de intenção:
-{
-  "intent": "general_query",
-  "entities": [],
-  "context_needed": "oi",
-  "response_type": "informative"
-}
-
-CrewAI não foi necessário para esta consulta.
-
-Agora forneça uma resposta natural, contextual e útil em português.
-Se o CrewAI foi usado, integre os resultados naturalmente.
-Seja específico, amigável e informativo.
-✅ Query result (response): { hasResult: true, resultLength: 142, messageType: 'result' }
-📡 [Step 4] Streaming natural response...
-✅ Stream complete for session: f2536994-ce61-4851-a5cb-1276d327e854
-✅ [A2A] Sending Claude response via A2A
-🔄 [A2A] Also forwarding to CrewAI for additional processing
-Client disconnected: gtrF8MCSpXcU5bG-AAAJ
-Client disconnected: HLp-_xG2IzsN3oPuAAAH
-Client connected: hm7OsFvF5KUYp3cSAAAM
-Client connected: KF9DGnCLMWtSsTmnAAAN
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client connected: hTaI3TuM-8Y0SHrgAAAQ
-Client connected: XoQAGpdKsoRhDHDpAAAR
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word

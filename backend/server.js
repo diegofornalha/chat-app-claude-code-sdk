@@ -11,6 +11,12 @@ const A2AClient = require('./a2a/client.js');
 const MCPClient = require('./mcp/client.js');
 const ContextEngine = require('./context/engine.js');
 
+// AI SDK v5 Services
+const AgentManagerV2 = require('./services/AgentManagerV2');
+const ClaudeAgentSDK = require('./agents/ClaudeAgentSDK');
+const CrewAIAgentSDK = require('./agents/CrewAIAgentSDK');
+const { UnifiedAgentFactory } = require('./agents/UnifiedAgentInterface');
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -80,6 +86,10 @@ const mcpClient = new MCPClient({
 });
 let contextEngine = null;
 
+// Initialize AI SDK v5 Manager
+const agentManagerV2 = new AgentManagerV2();
+let useAISDKv5 = process.env.USE_AI_SDK_V5 !== 'false'; // Default to true
+
 // Initialize all systems
 async function initializeSystem() {
   console.log('🚀 Initializing Chat Server Systems...');
@@ -120,6 +130,36 @@ async function initializeSystem() {
     // 3. Create Context Engine
     contextEngine = new ContextEngine(mcpClient, a2aClient);
     console.log('✅ Context Engine initialized');
+    
+    // 4. Initialize AI SDK v5 Agents
+    if (useAISDKv5) {
+      console.log('🎯 Initializing AI SDK v5 agents...');
+      try {
+        // Register Claude with AI SDK
+        const claudeSDK = new ClaudeAgentSDK();
+        await claudeSDK.initialize({ model: 'sonnet-3.5' });
+        agentManagerV2.registerAgent('claude-sdk', claudeSDK);
+        
+        // Register CrewAI with AI SDK
+        const crewSDK = new CrewAIAgentSDK();
+        await crewSDK.initialize({ model: 'sonnet-3.5' });
+        agentManagerV2.registerAgent('crew-sdk', crewSDK);
+        
+        // Register unified factory agents
+        UnifiedAgentFactory.register('claude-sdk', ClaudeAgentSDK);
+        UnifiedAgentFactory.register('crew-sdk', CrewAIAgentSDK);
+        
+        console.log('✅ AI SDK v5 agents initialized');
+        console.log('🔧 AgentManagerV2 Configuration:', {
+          orchestration: agentManagerV2.config.enableOrchestration,
+          qualityControl: agentManagerV2.config.enableQualityControl,
+          parallelProcessing: agentManagerV2.config.enableParallelProcessing
+        });
+      } catch (sdkError) {
+        console.error('⚠️ AI SDK v5 initialization failed:', sdkError.message);
+        useAISDKv5 = false;
+      }
+    }
 
     // 4. Log system status
     const status = contextEngine.getStatus();
@@ -635,6 +675,103 @@ app.get('/api/memory/labels', async (req, res) => {
   try {
     const labels = await mcpClient.listMemoryLabels();
     res.json({ labels });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// AI SDK v5 REST Endpoints
+app.get('/api/aisdk/status', (req, res) => {
+  if (!useAISDKv5) {
+    return res.status(503).json({ 
+      enabled: false,
+      message: 'AI SDK v5 is not enabled' 
+    });
+  }
+  
+  res.json({
+    enabled: true,
+    config: agentManagerV2.config,
+    agents: agentManagerV2.getAvailableAgents(),
+    metrics: agentManagerV2.metrics
+  });
+});
+
+app.post('/api/aisdk/process', async (req, res) => {
+  if (!useAISDKv5) {
+    return res.status(503).json({ error: 'AI SDK v5 is not enabled' });
+  }
+  
+  const { message, sessionId = uuidv4(), options = {} } = req.body;
+  
+  try {
+    const result = await agentManagerV2.processMessage(
+      message,
+      sessionId,
+      null, // No socket.io for REST
+      options
+    );
+    
+    res.json({
+      sessionId,
+      result,
+      metadata: result.metadata
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/aisdk/compare', async (req, res) => {
+  if (!useAISDKv5) {
+    return res.status(503).json({ error: 'AI SDK v5 is not enabled' });
+  }
+  
+  const { message, agents = ['claude-sdk', 'crew-sdk'], sessionId = uuidv4() } = req.body;
+  
+  try {
+    const comparison = await agentManagerV2.compareAgents(
+      message,
+      agents,
+      sessionId,
+      null
+    );
+    
+    res.json({
+      sessionId,
+      comparison
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/aisdk/metrics', async (req, res) => {
+  if (!useAISDKv5) {
+    return res.status(503).json({ error: 'AI SDK v5 is not enabled' });
+  }
+  
+  try {
+    const report = await agentManagerV2.getPerformanceReport();
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/aisdk/configure', (req, res) => {
+  if (!useAISDKv5) {
+    return res.status(503).json({ error: 'AI SDK v5 is not enabled' });
+  }
+  
+  const { settings } = req.body;
+  
+  try {
+    agentManagerV2.configure(settings);
+    res.json({
+      message: 'Configuration updated',
+      config: agentManagerV2.config
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1266,6 +1403,203 @@ io.on('connection', (socket) => {
     }
   });
 
+  // AI SDK v5 Event Handlers
+  socket.on('aisdk:process', async (data) => {
+    const { message, sessionId, options = {} } = data;
+    
+    if (!useAISDKv5) {
+      socket.emit('error', {
+        message: 'AI SDK v5 is not enabled',
+        sessionId
+      });
+      return;
+    }
+    
+    try {
+      console.log('🎯 [AI SDK v5] Processing with AgentManagerV2');
+      
+      // Process with AI SDK v5 enhancements
+      const result = await agentManagerV2.processMessage(
+        message,
+        sessionId,
+        io,
+        options
+      );
+      
+      // Emit result
+      socket.emit('aisdk:result', {
+        sessionId,
+        result,
+        metadata: result.metadata
+      });
+    } catch (error) {
+      console.error('❌ [AI SDK v5] Processing error:', error);
+      socket.emit('error', {
+        message: error.message,
+        sessionId,
+        type: 'aisdk_error'
+      });
+    }
+  });
+  
+  // Orchestrator routing decision
+  socket.on('orchestrator:route', async (data) => {
+    const { message, sessionId, context = {} } = data;
+    
+    if (!useAISDKv5) {
+      socket.emit('error', { message: 'AI SDK v5 not enabled' });
+      return;
+    }
+    
+    try {
+      const routingResult = await agentManagerV2.orchestrator.route(message, context);
+      
+      socket.emit('orchestrator:routing', {
+        sessionId,
+        decision: routingResult.decision,
+        metadata: routingResult.metadata
+      });
+    } catch (error) {
+      socket.emit('error', {
+        message: error.message,
+        type: 'orchestrator_error'
+      });
+    }
+  });
+  
+  // Quality evaluation request
+  socket.on('evaluator:evaluate', async (data) => {
+    const { response, request, sessionId } = data;
+    
+    if (!useAISDKv5) {
+      socket.emit('error', { message: 'AI SDK v5 not enabled' });
+      return;
+    }
+    
+    try {
+      const evaluation = await agentManagerV2.evaluator.evaluateResponse(
+        response,
+        request
+      );
+      
+      socket.emit('evaluator:quality', {
+        sessionId,
+        evaluation: evaluation.evaluation,
+        metadata: evaluation.metadata
+      });
+    } catch (error) {
+      socket.emit('error', {
+        message: error.message,
+        type: 'evaluator_error'
+      });
+    }
+  });
+  
+  // Parallel execution request
+  socket.on('parallel:execute', async (data) => {
+    const { tasks, sessionId, options = {} } = data;
+    
+    if (!useAISDKv5) {
+      socket.emit('error', { message: 'AI SDK v5 not enabled' });
+      return;
+    }
+    
+    try {
+      const result = await agentManagerV2.parallelExecutor.executeParallel(
+        tasks,
+        { ...options, io, sessionId }
+      );
+      
+      socket.emit('parallel:complete', {
+        sessionId,
+        results: result.results,
+        statistics: result.statistics
+      });
+    } catch (error) {
+      socket.emit('error', {
+        message: error.message,
+        type: 'parallel_error'
+      });
+    }
+  });
+  
+  // Agent comparison request
+  socket.on('aisdk:compare', async (data) => {
+    const { message, agents, sessionId } = data;
+    
+    if (!useAISDKv5) {
+      socket.emit('error', { message: 'AI SDK v5 not enabled' });
+      return;
+    }
+    
+    try {
+      const comparison = await agentManagerV2.compareAgents(
+        message,
+        agents,
+        sessionId,
+        io
+      );
+      
+      socket.emit('comparison:results', {
+        sessionId,
+        comparison
+      });
+    } catch (error) {
+      socket.emit('error', {
+        message: error.message,
+        type: 'comparison_error'
+      });
+    }
+  });
+  
+  // Performance metrics request
+  socket.on('aisdk:metrics', async (data) => {
+    const { sessionId } = data;
+    
+    if (!useAISDKv5) {
+      socket.emit('error', { message: 'AI SDK v5 not enabled' });
+      return;
+    }
+    
+    try {
+      const metrics = await agentManagerV2.getPerformanceReport();
+      
+      socket.emit('aisdk:metrics_report', {
+        sessionId,
+        metrics
+      });
+    } catch (error) {
+      socket.emit('error', {
+        message: error.message,
+        type: 'metrics_error'
+      });
+    }
+  });
+  
+  // Configure AI SDK settings
+  socket.on('aisdk:configure', async (data) => {
+    const { settings, sessionId } = data;
+    
+    if (!useAISDKv5) {
+      socket.emit('error', { message: 'AI SDK v5 not enabled' });
+      return;
+    }
+    
+    try {
+      agentManagerV2.configure(settings);
+      
+      socket.emit('aisdk:configured', {
+        sessionId,
+        settings: agentManagerV2.config
+      });
+    } catch (error) {
+      socket.emit('error', {
+        message: error.message,
+        type: 'configuration_error'
+      });
+    }
+  });
+  
   socket.on('a2a:send_message', async (data) => {
     const { message, sessionId, useAgent } = data;
     
