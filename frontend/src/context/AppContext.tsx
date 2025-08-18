@@ -99,6 +99,15 @@ export interface AppState {
   isSidebarOpen: boolean;
   theme: 'light' | 'dark';
   
+  // Configurações de UI
+  uiSettings: {
+    showProcessingLogs: boolean;
+    showDetailedMetrics: boolean;
+    autoExpandLogs: boolean;
+    animationsEnabled: boolean;
+    compactMode: boolean;
+  };
+  
   // Métricas
   metrics: {
     totalMessages: number;
@@ -149,6 +158,7 @@ export type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'SET_THEME'; payload: 'light' | 'dark' }
+  | { type: 'UPDATE_UI_SETTINGS'; payload: Partial<AppState['uiSettings']> }
   
   // Métricas
   | { type: 'UPDATE_METRICS'; payload: Partial<AppState['metrics']> }
@@ -173,6 +183,13 @@ const initialState: AppState = {
   isLoading: false,
   isSidebarOpen: true,
   theme: 'light',
+  uiSettings: {
+    showProcessingLogs: false, // Por padrão desabilitado
+    showDetailedMetrics: false,
+    autoExpandLogs: false,
+    animationsEnabled: true,
+    compactMode: false
+  },
   metrics: {
     totalMessages: 0,
     totalTasks: 0,
@@ -339,6 +356,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
     
     case 'SET_THEME':
       return { ...state, theme: action.payload };
+    
+    case 'UPDATE_UI_SETTINGS':
+      return { 
+        ...state, 
+        uiSettings: { ...state.uiSettings, ...action.payload }
+      };
     
     // Métricas
     case 'UPDATE_METRICS':

@@ -4,6 +4,8 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { io, Socket } from 'socket.io-client';
 import AgentSelector from './components/AgentSelector';
+import { ProcessingIndicator } from './components/ProcessingIndicator/ProcessingIndicator';
+import { UISettings } from './components/UISettings/UISettings';
 
 // Anthropic-inspired color system
 const colors = {
@@ -419,7 +421,6 @@ const MarkdownComponents = {
 export default function ClaudeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
-  const [minimizedMessages, setMinimizedMessages] = useState<Set<string>>(new Set());
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
@@ -430,6 +431,7 @@ export default function ClaudeChat() {
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showUISettings, setShowUISettings] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [connectionStats, setConnectionStats] = useState<ConnectionStats>({ active_connections: 0, active_sessions: 0 });
   const [settings, setSettings] = useState<ChatSettings>({
@@ -437,6 +439,13 @@ export default function ClaudeChat() {
     maxTurns: 5,
     allowedTools: [],
     streamingEnabled: true
+  });
+  const [uiSettings, setUiSettings] = useState({
+    showProcessingLogs: false,
+    showDetailedMetrics: false,
+    autoExpandLogs: false,
+    animationsEnabled: true,
+    compactMode: false
   });
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -900,221 +909,6 @@ export default function ClaudeChat() {
     return new Date(timestamp).toLocaleTimeString();
   };
 
-  const getStepIcon = (stepType: string) => {
-    const iconStyle = { 
-      width: '14px', 
-      height: '14px', 
-      borderRadius: '50%',
-      display: 'inline-block',
-      border: '2px solid transparent'
-    };
-
-    switch (stepType) {
-      case 'initializing':
-        return <div style={{ 
-          ...iconStyle, 
-          backgroundColor: colors.accent, 
-          animation: 'pulse 1s infinite',
-          border: `2px solid ${colors.accentLight}`
-        }}></div>;
-      case 'connecting':
-        return <div style={{ 
-          ...iconStyle, 
-          backgroundColor: colors.warning,
-          border: `2px solid ${colors.warningLight}`,
-          animation: 'pulse 0.8s infinite'
-        }}></div>;
-      case 'thinking':
-        return <div style={{ 
-          ...iconStyle, 
-          backgroundColor: colors.accent, 
-          animation: 'pulse 1.5s infinite',
-          border: `2px solid ${colors.accentLight}`,
-          boxShadow: `0 0 4px ${colors.accent}`
-        }}></div>;
-      case 'tool_use':
-        return <div style={{ 
-          ...iconStyle, 
-          backgroundColor: colors.success,
-          border: `2px solid ${colors.successLight}`,
-          animation: 'pulse 0.6s infinite'
-        }}></div>;
-      case 'tool_result':
-        return <div style={{ 
-          ...iconStyle, 
-          backgroundColor: colors.success,
-          border: `2px solid ${colors.successLight}`
-        }}></div>;
-      case 'result':
-        return <div style={{ 
-          ...iconStyle, 
-          backgroundColor: colors.statusSuccess,
-          border: `2px solid ${colors.successLight}`,
-          boxShadow: `0 0 6px ${colors.success}`
-        }}></div>;
-      case 'finalizing':
-        return <div style={{ 
-          ...iconStyle, 
-          backgroundColor: colors.statusSuccess,
-          border: `2px solid ${colors.successLight}`,
-          animation: 'pulse 0.5s infinite'
-        }}></div>;
-      default:
-        return <div style={{ 
-          ...iconStyle, 
-          backgroundColor: colors.textTertiary,
-          border: `2px solid ${colors.borderLight}`
-        }}></div>;
-    }
-  };
-
-  const renderStepData = (data: any) => {
-    if (!data || typeof data !== 'object') return null;
-
-    return (
-      <div className="text-xs mt-2 space-y-1" style={{ color: colors.textTertiary }}>
-        {/* Initialization Data */}
-        {data.type === 'initialization' && (
-          <>
-            <div className="font-medium mb-1" style={{ color: colors.textSecondary }}>Initialization Details:</div>
-            <div>• Prompt size: <span style={{ color: colors.textSecondary }}>{data.promptLength} characters</span></div>
-            <div>• Max turns: <span style={{ color: colors.textSecondary }}>{data.maxTurns}</span></div>
-            <div>• Allowed tools: <span style={{ color: colors.textSecondary }}>{data.allowedTools?.length || 0} tools</span></div>
-            <div>• Session: <span style={{ color: colors.textSecondary }}>{data.sessionInfo}</span></div>
-          </>
-        )}
-
-        {/* Connection Data */}
-        {data.type === 'connection' && (
-          <>
-            <div className="font-medium mb-1" style={{ color: colors.textSecondary }}>Connection Details:</div>
-            <div>• Endpoint: <span style={{ color: colors.textSecondary }}>{data.apiEndpoint}</span></div>
-            <div>• Auth: <span style={{ color: colors.success }}>{data.authentication}</span></div>
-            <div>• Request size: <span style={{ color: colors.textSecondary }}>{data.requestSize}</span></div>
-          </>
-        )}
-
-        {/* Tool Use Data */}
-        {data.type === 'tool_use' && (
-          <>
-            <div className="font-medium mb-1" style={{ color: colors.textSecondary }}>Tool Execution:</div>
-            <div>• Tool: <span style={{ color: colors.accent }}>{data.toolName}</span></div>
-            <div>• ID: <span style={{ color: colors.textSecondary }}>{data.toolId?.slice(0, 12)}...</span></div>
-            {data.inputSummary && (
-              <div>• Input: <span style={{ color: colors.textSecondary }}>{data.inputSummary}</span></div>
-            )}
-            {data.expectedOutput && (
-              <div>• Expected: <span style={{ color: colors.textSecondary }}>{data.expectedOutput}</span></div>
-            )}
-            {data.toolDescription && (
-              <div className="mt-1 italic">"{data.toolDescription}"</div>
-            )}
-          </>
-        )}
-
-        {/* Tool Result Data */}
-        {data.type === 'tool_result' && (
-          <>
-            <div className="font-medium mb-1" style={{ color: colors.textSecondary }}>Tool Result:</div>
-            <div>• Status: <span style={{ color: data.executionStatus === 'success' ? colors.success : colors.error }}>
-              {data.executionStatus}</span></div>
-            <div>• Tool ID: <span style={{ color: colors.textSecondary }}>{data.toolUseId?.slice(0, 12)}...</span></div>
-            {data.contentLength && (
-              <div>• Output size: <span style={{ color: colors.textSecondary }}>{data.contentLength} chars</span></div>
-            )}
-            {data.contentType && (
-              <div>• Content type: <span style={{ color: colors.textSecondary }}>{data.contentType}</span></div>
-            )}
-            {data.outputSummary && (
-              <div>• Summary: <span style={{ color: colors.textSecondary }}>{data.outputSummary}</span></div>
-            )}
-            {data.errorDetails && (
-              <div>• Error: <span style={{ color: colors.error }}>{String(data.errorDetails).substring(0, 100)}...</span></div>
-            )}
-          </>
-        )}
-
-        {/* Result Data */}
-        {data.type === 'result' && (
-          <>
-            <div className="font-medium mb-1" style={{ color: colors.textSecondary }}>Processing Complete:</div>
-            <div>• Status: <span style={{ color: data.isError ? colors.error : colors.success }}>
-              {data.isError ? 'Failed' : 'Success'}</span></div>
-            {data.duration && (
-              <div>• Duration: <span style={{ color: colors.textSecondary }}>{data.duration}ms</span></div>
-            )}
-            {data.cost && (
-              <div>• Cost: <span style={{ color: colors.textSecondary }}>${data.cost.toFixed(4)}</span></div>
-            )}
-            {data.turns && (
-              <div>• Turns: <span style={{ color: colors.textSecondary }}>{data.turns}</span></div>
-            )}
-            
-            {/* Token Usage */}
-            {(data.inputTokens || data.outputTokens) && (
-              <>
-                <div className="font-medium mt-2 mb-1" style={{ color: colors.textSecondary }}>Token Usage:</div>
-                {data.inputTokens && (
-                  <div>• Input: <span style={{ color: colors.textSecondary }}>{data.inputTokens.toLocaleString()} tokens</span></div>
-                )}
-                {data.outputTokens && (
-                  <div>• Output: <span style={{ color: colors.textSecondary }}>{data.outputTokens.toLocaleString()} tokens</span></div>
-                )}
-                {data.cacheReads && (
-                  <div>• Cache reads: <span style={{ color: colors.success }}>{data.cacheReads.toLocaleString()} tokens</span></div>
-                )}
-                {data.cacheWrites && (
-                  <div>• Cache writes: <span style={{ color: colors.warning }}>{data.cacheWrites.toLocaleString()} tokens</span></div>
-                )}
-              </>
-            )}
-
-            {/* Response Analysis */}
-            {data.responseLength && (
-              <>
-                <div className="font-medium mt-2 mb-1" style={{ color: colors.textSecondary }}>Response Analysis:</div>
-                <div>• Length: <span style={{ color: colors.textSecondary }}>{data.responseLength} characters</span></div>
-                <div>• Words: <span style={{ color: colors.textSecondary }}>{data.responseWords?.toLocaleString()}</span></div>
-                <div>• Lines: <span style={{ color: colors.textSecondary }}>{data.responseLines}</span></div>
-                <div>• Has code: <span style={{ color: data.hasCodeBlocks ? colors.success : colors.textTertiary }}>
-                  {data.hasCodeBlocks ? 'Yes' : 'No'}</span></div>
-                <div>• Markdown: <span style={{ color: data.hasMarkdown ? colors.success : colors.textTertiary }}>
-                  {data.hasMarkdown ? 'Yes' : 'No'}</span></div>
-              </>
-            )}
-
-            {/* Error Details */}
-            {data.isError && (
-              <>
-                <div className="font-medium mt-2 mb-1" style={{ color: colors.error }}>Error Details:</div>
-                <div>• Type: <span style={{ color: colors.error }}>{data.errorType}</span></div>
-                <div>• Message: <span style={{ color: colors.error }}>{data.errorMessage}</span></div>
-              </>
-            )}
-          </>
-        )}
-
-        {/* Thinking Data */}
-        {data.type === 'thinking' && (
-          <>
-            <div className="font-medium mb-1" style={{ color: colors.textSecondary }}>Cognitive Processing:</div>
-            <div>• Load: <span style={{ color: colors.accent }}>{data.cognitiveLoad}</span></div>
-            <div>• Phase: <span style={{ color: colors.textSecondary }}>{data.analysisPhase}</span></div>
-            <div>• Strategy: <span style={{ color: colors.textSecondary }}>
-              {data.strategizing ? 'Planning response approach' : 'Executing plan'}</span></div>
-          </>
-        )}
-
-        {/* Message ID and Timestamp */}
-        {data.messageId && (
-          <div className="mt-2 pt-1 border-t" style={{ borderTopColor: colors.borderLight }}>
-            <div>• Message ID: <span style={{ color: colors.textTertiary }}>{data.messageId}</span></div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   useEffect(() => {
     if (showSidebar) {
       console.log('📋 [SESSIONS] Sidebar opened, loading sessions...');
@@ -1163,6 +957,12 @@ export default function ClaudeChat() {
               active={showSettings}
             >
               Settings
+            </HeaderButton>
+            <HeaderButton
+              onClick={() => setShowUISettings(!showUISettings)}
+              active={showUISettings}
+            >
+              UI Config
             </HeaderButton>
             <HeaderButton
               onClick={() => setShowFileUpload(!showFileUpload)}
@@ -1655,106 +1455,17 @@ export default function ClaudeChat() {
             );
           })}
           
-          {/* Processing Steps Display - Only show for complex operations */}
-          {processingSteps.length > 0 && (() => {
-            // Determinar se deve mostrar detalhes técnicos baseado em:
-            // 1. Se há uso de ferramentas
-            // 2. Se a última mensagem do usuário é longa
-            // 3. Se há múltiplos steps de processamento
-            const hasToolUse = processingSteps.some(step => 
-              step.step === 'tool_use' || step.step === 'tool_result'
-            );
-            const lastUserMessage = messages.filter(m => m.type === 'user').pop();
-            const isComplexRequest = lastUserMessage && (typeof lastUserMessage.content === 'string' ? lastUserMessage.content.length : 0) > 200;
-            const hasMultipleSteps = processingSteps.length > 3;
-            
-            // Só mostrar dropdown detalhado se for uma operação complexa
-            const shouldShowDetails = hasToolUse || isComplexRequest || hasMultipleSteps;
-            
-            if (!shouldShowDetails) {
-              // Para mensagens simples, mostrar apenas indicador mínimo
-              return (
-                <div className="flex justify-start">
-                  <div className="rounded-xl px-5 py-3 shadow-sm border" style={{ 
-                    backgroundColor: colors.surface, 
-                    borderColor: colors.border,
-                    boxShadow: `0 1px 3px ${colors.overlayLight}`
-                  }}>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent }}></div>
-                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent, animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent, animationDelay: '0.4s' }}></div>
-                      </div>
-                      <span className="text-sm font-medium" style={{ color: colors.textSecondary }}>Claude is thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            
-            // Para operações complexas, mostrar dropdown completo
-            return (
+          {/* Processing Steps Display - Controlado por configurações do usuário */}
+          {processingSteps.length > 0 && (
             <div className="flex justify-start">
-              <div 
-                className="max-w-3xl rounded-xl px-5 py-3 shadow-sm border"
-                style={{
-                  backgroundColor: colors.surfaceSecondary,
-                  borderColor: colors.accent,
-                  color: colors.textSecondary
-                }}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: colors.accent }}></div>
-                    <span className="text-sm font-medium" style={{ color: colors.accent }}>
-                      Processing your request...
-                    </span>
-                  </div>
-                  
-                  {processingSteps.map((step, index) => (
-                    <div key={index} className="flex items-start space-x-3 py-2 px-2 rounded-lg" 
-                         style={{ backgroundColor: index === processingSteps.length - 1 ? colors.accentLight : 'transparent' }}>
-                      <div className="flex-shrink-0 mt-1">
-                        {getStepIcon(step.step)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                            {step.message}
-                          </div>
-                          <div className="text-xs ml-2 flex-shrink-0" style={{ color: colors.textTertiary }}>
-                            {new Date(step.timestamp).toLocaleTimeString()}
-                          </div>
-                        </div>
-                        
-                        {step.data && (
-                          <div className="mt-1">
-                            {renderStepData(step.data)}
-                          </div>
-                        )}
-                        
-                        {/* Progress indicator for current step */}
-                        {index === processingSteps.length - 1 && (
-                          <div className="mt-2">
-                            <div className="w-full bg-gray-200 rounded-full h-1">
-                              <div className="h-1 rounded-full animate-pulse" 
-                                   style={{ 
-                                     backgroundColor: colors.accent,
-                                     width: '70%',
-                                     animation: 'pulse 1s infinite'
-                                   }}></div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ProcessingIndicator
+                steps={processingSteps}
+                showDetails={uiSettings.showProcessingLogs}
+                autoExpand={uiSettings.autoExpandLogs}
+                animationsEnabled={uiSettings.animationsEnabled}
+              />
             </div>
-            );
-          })()}
+          )}
           
           {currentStreamingContent && (() => {
             const contentStr = typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent);
@@ -1898,6 +1609,15 @@ export default function ClaudeChat() {
           )}
         </div>
       </div>
+
+      {/* UI Settings Modal */}
+      {showUISettings && (
+        <UISettings
+          settings={uiSettings}
+          onSettingsChange={(newSettings) => setUiSettings(prev => ({ ...prev, ...newSettings }))}
+          onClose={() => setShowUISettings(false)}
+        />
+      )}
     </div>
   );
 }
