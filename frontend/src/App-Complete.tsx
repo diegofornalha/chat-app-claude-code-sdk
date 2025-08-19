@@ -52,9 +52,7 @@ function AppComplete() {
   const [currentAgent, setCurrentAgent] = useState('claude');
   const [tasks, setTasks] = useState<TaskType[]>([]);
   const [agents, setAgents] = useState<any[]>([
-    { id: 'claude', name: 'Claude', description: 'Direct Claude Code SDK', status: 'idle' },
-    { id: 'crew-ai', name: 'CrewAI', description: 'Team of specialized agents', status: 'idle' },
-    { id: 'helloworld', name: 'HelloWorld', description: 'Simple test agent', status: 'idle' }
+    { id: 'claude', name: 'Claude', description: 'Direct Claude Code SDK', status: 'idle' }
   ]);
   const [sessionId, setSessionId] = useState<string>('');
   const [showReasoning, setShowReasoning] = useState(false);

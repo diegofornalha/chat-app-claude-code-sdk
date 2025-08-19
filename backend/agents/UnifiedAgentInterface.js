@@ -5,7 +5,7 @@
 
 const { z } = require('zod');
 const { generateText, generateObject } = require('ai');
-const { claudeCode } = require('ai-sdk-provider-claude-code');
+const { claudeCode } = require('../../providers/ai-sdk-provider');
 
 // Common schemas for all agents
 const AgentCapabilitiesSchema = z.object({

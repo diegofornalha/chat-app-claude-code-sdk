@@ -6,7 +6,6 @@
 const EventEmitter = require('events');
 const axios = require('axios');
 const ClaudeAgent = require('../agents/ClaudeAgent');
-const CrewAIAgent = require('../agents/CrewAIAgent');
 const BaseAgent = require('../agents/BaseAgent');
 const { getAsyncPoller } = require('./AsyncPoller');
 
@@ -78,7 +77,7 @@ class AgentManager extends EventEmitter {
    * Registra agentes padrão
    */
   async registerDefaultAgents() {
-    // Registrar Claude
+    // Registrar apenas Claude como agente core
     const claudeAgent = new ClaudeAgent({
       systemPrompt: 'Você é um assistente útil que responde em português.'
     });
@@ -87,12 +86,7 @@ class AgentManager extends EventEmitter {
       this.registerAgent(claudeAgent);
     }
     
-    // Registrar CrewAI
-    const crewAIAgent = new CrewAIAgent();
-    
-    if (await crewAIAgent.initialize()) {
-      this.registerAgent(crewAIAgent);
-    }
+    // Outros agentes serão registrados via sistema de plugins
   }
 
   /**

@@ -6,6 +6,7 @@ import { io, Socket } from 'socket.io-client';
 import AgentSelector from './components/AgentSelector';
 import { ProcessingIndicator } from './components/ProcessingIndicator/ProcessingIndicator';
 import { UISettings } from './components/UISettings/UISettings';
+import { EnhancedMetrics } from './components/EnhancedMetrics/EnhancedMetrics';
 
 // Anthropic-inspired color system
 const colors = {
@@ -433,6 +434,7 @@ export default function ClaudeChat() {
   const [showSettings, setShowSettings] = useState(false);
   const [showUISettings, setShowUISettings] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showEnhancedMetrics, setShowEnhancedMetrics] = useState(false);
   const [connectionStats, setConnectionStats] = useState<ConnectionStats>({ active_connections: 0, active_sessions: 0 });
   const [settings, setSettings] = useState<ChatSettings>({
     systemPrompt: '',
@@ -1102,6 +1104,13 @@ export default function ClaudeChat() {
               UI Config
             </HeaderButton>
             <HeaderButton
+              onClick={() => setShowEnhancedMetrics(!showEnhancedMetrics)}
+              active={showEnhancedMetrics}
+              variant="success"
+            >
+              📊 Metrics
+            </HeaderButton>
+            <HeaderButton
               onClick={() => setShowFileUpload(!showFileUpload)}
               active={showFileUpload}
               variant="success"
@@ -1461,6 +1470,17 @@ export default function ClaudeChat() {
           </div>
         </div>
       )}
+
+      {/* Enhanced Metrics Panel */}
+      {showEnhancedMetrics && (
+        <div className="border-b" style={{ borderColor: colors.border }}>
+          <EnhancedMetrics
+            serverUrl="http://localhost:8080"
+            showDetailedMetrics={uiSettings.showDetailedMetrics}
+          />
+        </div>
+      )}
+
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">

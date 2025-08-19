@@ -216,6 +216,9 @@ class A2AClient extends EventEmitter {
     this.activeTasks.set(taskId, taskRecord);
 
     try {
+      // Garantir que task é uma string
+      const taskContent = typeof task === 'string' ? task : JSON.stringify(task);
+      
       // Enviar tarefa via API REST
       const response = await fetch(`${agent.url}/tasks`, {
         method: 'POST',
@@ -223,7 +226,7 @@ class A2AClient extends EventEmitter {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          task,
+          task: taskContent,
           context: options.context || {},
           streaming: options.streaming || false
         })
@@ -335,6 +338,9 @@ class A2AClient extends EventEmitter {
       return this.sendTask(message, { streaming: true });
     }
 
+    // Garantir que message é uma string
+    const messageContent = typeof message === 'string' ? message : JSON.stringify(message);
+    
     // Usar endpoint de chat específico
     const response = await fetch(`${agent.url}/claude/chat`, {
       method: 'POST',
@@ -342,7 +348,7 @@ class A2AClient extends EventEmitter {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        message,
+        message: messageContent,
         session_id: sessionId
       })
     });

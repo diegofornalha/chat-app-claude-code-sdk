@@ -5,7 +5,7 @@
 
 const { generateObject, generateText } = require('ai');
 const { z } = require('zod');
-const { claudeCode } = require('ai-sdk-provider-claude-code');
+const { claudeCode } = require('../../../providers/ai-sdk-provider');
 
 // Schema para routing decisions
 const RoutingDecisionSchema = z.object({
@@ -41,7 +41,7 @@ const TaskDecompositionSchema = z.object({
 class Orchestrator {
   constructor(agentManager) {
     this.agentManager = agentManager;
-    this.model = claudeCode('claude-3-5-sonnet-20241022');
+    this.model = claudeCode('opus');
     this.routingHistory = new Map();
     this.performanceMetrics = new Map();
   }

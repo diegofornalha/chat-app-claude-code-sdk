@@ -1,14 +1,23 @@
 /**
  * Context Engine Unificado
- * Integra MCP (Neo4j Memory) com A2A (Agentes)
+ * Integra MCP (Neo4j Memory) com A2A (Agentes) e MemoryMiddleware
  */
 
 class ContextEngine {
-  constructor(mcpClient, a2aClient) {
+  constructor(mcpClient, a2aClient, memoryMiddleware = null) {
     this.mcp = mcpClient;    // Neo4j MCP para memória
     this.a2a = a2aClient;    // A2A Client para agentes
+    this.memoryMiddleware = memoryMiddleware; // Middleware de memória unificado
     this.sessions = new Map(); // Cache de sessões
     this.contextCache = new Map(); // Cache de contexto
+  }
+  
+  /**
+   * Configurar MemoryMiddleware após inicialização
+   */
+  setMemoryMiddleware(memoryMiddleware) {
+    this.memoryMiddleware = memoryMiddleware;
+    console.log('🧠 Context Engine: MemoryMiddleware configured');
   }
 
   /**
@@ -19,17 +28,72 @@ class ContextEngine {
       agentType = 'claude',
       useMemory = true,
       saveToMemory = true,
-      maxContextItems = 10
+      maxContextItems = 10,
+      userId = 'anonymous'
     } = options;
 
     try {
       console.log(`🧠 [Context Engine] Processing message with agent: ${agentType}`);
       
-      // 1. Buscar contexto relevante no Neo4j via MCP
+      // 1. Se MemoryMiddleware está disponível, usar seu processamento avançado
+      let enrichedMessage = { content: message, role: 'user' };
       let context = [];
       let relevantMemories = [];
       
-      if (useMemory && this.mcp && this.mcp.connected) {
+      if (this.memoryMiddleware && useMemory) {
+        try {
+          // Usar MemoryMiddleware para processamento completo
+          const processedMessage = await this.memoryMiddleware.processMessage(
+            enrichedMessage,
+            userId,
+            sessionId
+          );
+          
+          // Extrair contexto do processamento
+          if (processedMessage.context) {
+            // Converter formato do contexto para compatibilidade
+            if (processedMessage.context.session) {
+              relevantMemories.push(...processedMessage.context.session);
+            }
+            if (processedMessage.context.semantic) {
+              relevantMemories.push(...processedMessage.context.semantic);
+            }
+            if (processedMessage.context.domain) {
+              context.push(...processedMessage.context.domain);
+            }
+          }
+          
+          // Usar mensagem enriquecida
+          enrichedMessage = processedMessage;
+          
+          console.log(`📚 MemoryMiddleware: Found ${relevantMemories.length} memories, intent: ${processedMessage.intent}`);
+        } catch (error) {
+          console.error('MemoryMiddleware error, fallback to direct MCP:', error);
+          // Fallback para busca direta via MCP
+          try {
+            // Buscar memórias relacionadas
+            relevantMemories = await this.mcp.searchMemories({
+              query: message,
+              limit: maxContextItems,
+              depth: 2,
+              label: 'message'
+            });
+            
+            // Buscar conhecimento geral
+            const knowledge = await this.mcp.searchMemories({
+              query: message,
+              limit: 5,
+              label: 'knowledge'
+            });
+            
+            context = [...relevantMemories, ...knowledge];
+            console.log(`📚 Found ${context.length} relevant memories via direct MCP fallback`);
+          } catch (fallbackError) {
+            console.error('Direct MCP fallback also failed:', fallbackError);
+          }
+        }
+      } else if (useMemory && this.mcp && this.mcp.connected) {
+        // Fallback: usar MCP diretamente se MemoryMiddleware não está disponível
         try {
           // Buscar memórias relacionadas
           relevantMemories = await this.mcp.searchMemories({
@@ -47,14 +111,15 @@ class ContextEngine {
           });
           
           context = [...relevantMemories, ...knowledge];
-          console.log(`📚 Found ${context.length} relevant memories`);
+          console.log(`📚 Found ${context.length} relevant memories via direct MCP`);
         } catch (error) {
           console.error('Error fetching memories:', error);
         }
       }
 
       // 2. Enriquecer prompt com contexto
-      const enrichedPrompt = this.buildContextualPrompt(message, context);
+      const messageContent = enrichedMessage.content || enrichedMessage.message || message;
+      const enrichedPrompt = this.buildContextualPrompt(messageContent, context, enrichedMessage);
       
       // 3. Escolher agente e processar via A2A
       let response;
@@ -83,12 +148,16 @@ class ContextEngine {
       }
 
       // 4. Salvar conversa no Neo4j se habilitado
-      if (saveToMemory && this.mcp && this.mcp.connected) {
-        await this.saveConversation(message, response, sessionId, agentType, context);
+      if (saveToMemory) {
+        // Se MemoryMiddleware já processou, não duplicar
+        if (!this.memoryMiddleware && this.mcp && this.mcp.connected) {
+          await this.saveConversation(messageContent, response, sessionId, agentType, context);
+        }
+        // MemoryMiddleware já salvou automaticamente durante processMessage
       }
 
       // 5. Atualizar cache
-      this.updateContextCache(sessionId, message, response);
+      this.updateContextCache(sessionId, messageContent, response);
 
       return {
         response: response.result || response,
@@ -111,8 +180,34 @@ class ContextEngine {
   /**
    * Construir prompt com contexto
    */
-  buildContextualPrompt(message, context) {
+  buildContextualPrompt(message, context, enrichedMessage = null) {
+    const sections = [];
+    
+    // Adicionar informações do processamento se disponível
+    if (enrichedMessage) {
+      if (enrichedMessage.intent && enrichedMessage.intent !== 'general') {
+        sections.push(`🎯 Intenção detectada: ${enrichedMessage.intent}`);
+      }
+      
+      if (enrichedMessage.entities && enrichedMessage.entities.length > 0) {
+        const entityTypes = [...new Set(enrichedMessage.entities.map(e => e.type))];
+        sections.push(`🔍 Entidades identificadas: ${entityTypes.join(', ')}`);
+      }
+      
+      if (enrichedMessage.userPatterns && enrichedMessage.userPatterns.length > 0) {
+        const patterns = enrichedMessage.userPatterns.map(p => p.pattern).slice(0, 3);
+        sections.push(`🔄 Padrões do usuário: ${patterns.join(', ')}`);
+      }
+      
+      if (enrichedMessage.previousMessages && enrichedMessage.previousMessages.length > 0) {
+        sections.push(`📝 Histórico: ${enrichedMessage.previousMessages.length} mensagens anteriores relevantes`);
+      }
+    }
+    
     if (!context || context.length === 0) {
+      if (sections.length > 0) {
+        return `${sections.join('\n')}\n\n💬 Mensagem atual do usuário:\n${message}`;
+      }
       return message;
     }
 

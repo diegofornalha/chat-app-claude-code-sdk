@@ -5,7 +5,7 @@
 
 const { generateObject, generateText } = require('ai');
 const { z } = require('zod');
-const { claudeCode } = require('ai-sdk-provider-claude-code');
+const { claudeCode } = require('../../../providers/ai-sdk-provider');
 
 // Common schemas for structured outputs
 const CommonSchemas = {
@@ -66,7 +66,7 @@ const CommonSchemas = {
 
 class StructuredOutput {
   constructor() {
-    this.model = claudeCode('claude-3-5-sonnet-20241022');
+    this.model = claudeCode('opus');
     this.schemaCache = new Map();
     this.validationStats = new Map();
   }

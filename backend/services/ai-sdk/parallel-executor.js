@@ -5,7 +5,7 @@
 
 const { generateObject, generateText } = require('ai');
 const { z } = require('zod');
-const { claudeCode } = require('ai-sdk-provider-claude-code');
+const { claudeCode } = require('../../../providers/ai-sdk-provider');
 
 // Schema para parallel execution plan
 const ParallelExecutionPlanSchema = z.object({
@@ -40,7 +40,7 @@ const AggregatedResultSchema = z.object({
 class ParallelExecutor {
   constructor(agentManager) {
     this.agentManager = agentManager;
-    this.model = claudeCode('claude-3-5-sonnet-20241022');
+    this.model = claudeCode('opus');
     this.executionStats = new Map();
     this.maxConcurrency = 5;
   }

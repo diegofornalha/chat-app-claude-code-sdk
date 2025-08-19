@@ -5,7 +5,7 @@
 
 const { generateObject, generateText } = require('ai');
 const { z } = require('zod');
-const { claudeCode } = require('ai-sdk-provider-claude-code');
+const { claudeCode } = require('../../../providers/ai-sdk-provider');
 
 // Schema para quality evaluation
 const QualityEvaluationSchema = z.object({
@@ -37,7 +37,7 @@ const ImprovementSchema = z.object({
 
 class Evaluator {
   constructor() {
-    this.model = claudeCode('claude-3-5-sonnet-20241022');
+    this.model = claudeCode('opus');
     this.evaluationHistory = [];
     this.qualityThreshold = 7; // Minimum quality score
     this.maxRetries = 3;

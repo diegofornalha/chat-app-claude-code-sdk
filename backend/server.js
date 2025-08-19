@@ -9,13 +9,29 @@ const { v4: uuidv4 } = require('uuid');
 const { query } = require('@anthropic-ai/claude-code');
 const A2AClient = require('./a2a/client.js');
 const MCPClient = require('./mcp/client.js');
+const Neo4jRAGService = require('./services/neo4j-rag-service.js');
 const ContextEngine = require('./context/engine.js');
 
 // AI SDK v5 Services
 const AgentManagerV2 = require('./services/AgentManagerV2');
 const ClaudeAgentSDK = require('./agents/ClaudeAgentSDK');
-const CrewAIAgentSDK = require('./agents/CrewAIAgentSDK');
 const { UnifiedAgentFactory } = require('./agents/UnifiedAgentInterface');
+
+// Enhanced Agent Manager Integration
+const EnhancedAgentManager = require('./services/EnhancedAgentManager');
+const OrchestratorService = require('./services/OrchestratorService');
+const QualityController = require('./services/QualityController');
+const { config, validateConfig } = require('./config/ai-sdk.config');
+const WorkerPool = require('./integrations/WorkerPool');
+const FeedbackProcessor = require('./integrations/FeedbackProcessor');
+const TelemetryMonitor = require('./integrations/TelemetryMonitor');
+const StructuredOutputProcessor = require('./integrations/StructuredOutputProcessor');
+
+// Plugin System
+const PluginManager = require('./plugins/PluginManager');
+
+// Memory Middleware
+const MemoryMiddleware = require('./middleware/MemoryMiddleware');
 
 const app = express();
 const server = http.createServer(app);
@@ -84,11 +100,29 @@ const a2aClient = new A2AClient();
 const mcpClient = new MCPClient({
   debug: process.env.MCP_DEBUG === 'true'
 });
+const ragService = new Neo4jRAGService(mcpClient);
 let contextEngine = null;
 
 // Initialize AI SDK v5 Manager
 const agentManagerV2 = new AgentManagerV2();
 let useAISDKv5 = process.env.USE_AI_SDK_V5 !== 'false'; // Default to true
+
+// Initialize Enhanced Agent Manager Components
+let enhancedAgentManager = null;
+let orchestratorService = null;
+let qualityController = null;
+let workerPool = null;
+let feedbackProcessor = null;
+
+// Initialize Plugin Manager
+const pluginManager = new PluginManager({
+  autoReload: true,
+  pluginsDir: path.join(__dirname, 'plugins/available'),
+  enabledDir: path.join(__dirname, 'plugins/enabled')
+});
+
+// Initialize Memory Middleware
+let memoryMiddleware = null;
 
 // Initialize all systems
 async function initializeSystem() {
@@ -104,50 +138,110 @@ async function initializeSystem() {
       console.error('⚠️ MCP Client failed (continuing without memory):', mcpError.message);
     }
 
-    // 2. Register A2A agents
-    console.log('🤖 Discovering A2A agents...');
+    // 2. Initialize Plugin Manager
+    console.log('🔌 Initializing Plugin Manager...');
     try {
-
-      // Register CrewAI agent
-      await a2aClient.registerAgent('crew-ai', {
-        url: 'http://localhost:8005',
-        type: 'team'
-      });
-
-      // Register Helloworld agent
-      await a2aClient.registerAgent('helloworld', {
-        url: 'http://localhost:9999',
-        type: 'generic'
-      });
-
-
-      console.log('✅ A2A agents discovered and registered');
-      console.log('📋 Registered agents:', Array.from(a2aClient.agents.keys()));
-    } catch (a2aError) {
-      console.error('⚠️ Some A2A agents failed to register:', a2aError.message);
+      await pluginManager.initialize(a2aClient);
+      console.log(`✅ Plugin Manager initialized with ${pluginManager.plugins.size} plugins`);
+      
+      // List available plugins
+      const available = await pluginManager.listAvailablePlugins();
+      if (available.length > 0) {
+        console.log('📦 Available plugins:', available.map(p => p.id).join(', '));
+      }
+    } catch (pluginError) {
+      console.error('⚠️ Plugin Manager failed (continuing without plugins):', pluginError.message);
     }
 
-    // 3. Create Context Engine
-    contextEngine = new ContextEngine(mcpClient, a2aClient);
-    console.log('✅ Context Engine initialized');
+    // 3. Initialize Memory Middleware
+    console.log('🧠 Initializing Memory Middleware...');
+    if (mcpClient && ragService) {
+      memoryMiddleware = new MemoryMiddleware(mcpClient, ragService);
+      console.log('✅ Memory Middleware initialized - ALL messages will be saved to Neo4j');
+      
+      // Configurar limpeza automática de sessões antigas a cada hora
+      setInterval(() => {
+        memoryMiddleware.cleanupOldSessions();
+      }, 60 * 60 * 1000);
+      
+      // Registrar rotas de gestão de memória
+      const MemoryRoutes = require('./routes/memory');
+      const memoryRoutes = new MemoryRoutes(memoryMiddleware, ragService);
+      app.use('/api/memory/v2', memoryRoutes.getRouter());
+      console.log('🧠 Memory management routes registered at /api/memory/v2');
+    } else {
+      console.warn('⚠️ Memory Middleware not initialized - Neo4j service not available');
+    }
+
+    // 4. Create Context Engine
+    contextEngine = new ContextEngine(mcpClient, a2aClient, memoryMiddleware);
+    console.log('✅ Context Engine initialized with MemoryMiddleware integration');
     
     // 4. Initialize AI SDK v5 Agents
     if (useAISDKv5) {
       console.log('🎯 Initializing AI SDK v5 agents...');
       try {
+        // Validate configuration
+        validateConfig();
+        
+        // Initialize Enhanced Agent Manager Components
+        console.log('🔧 Setting up Enhanced Agent Manager ecosystem...');
+        
+        // Initialize Worker Pool
+        workerPool = new WorkerPool({
+          maxWorkers: config.parallel.maxConcurrency,
+          workerTimeout: config.parallel.taskTimeout
+        });
+        
+        // Initialize Feedback Processor
+        feedbackProcessor = new FeedbackProcessor({
+          learningEnabled: true,
+          adaptiveThresholds: true
+        });
+        
+        // Initialize Quality Controller
+        qualityController = new QualityController(
+          { generateObject: agentManagerV2.generateObject.bind(agentManagerV2) },
+          feedbackProcessor
+        );
+        
+        // Initialize Orchestrator Service
+        orchestratorService = new OrchestratorService(
+          { generateObject: agentManagerV2.generateObject.bind(agentManagerV2) },
+          workerPool
+        );
+        
+        // Initialize Enhanced Agent Manager
+        enhancedAgentManager = new EnhancedAgentManager(
+          { analyzeComplexity: agentManagerV2.analyzeComplexity?.bind(agentManagerV2) || (() => ({ score: 0.5, factors: [], estimatedTime: 5000 })),
+            generateText: agentManagerV2.generateText?.bind(agentManagerV2) || (() => ({ text: 'Mock response' })) },
+          orchestratorService,
+          qualityController
+        );
+        
+        // Register agents in Enhanced Manager
+        enhancedAgentManager.registerAgent({
+          id: 'claude-enhanced',
+          name: 'Claude Enhanced',
+          capabilities: ['text_generation', 'code_generation', 'data_analysis'],
+          performance: { avgTime: 2000, successRate: 0.95 }
+        });
+        
+        enhancedAgentManager.registerAgent({
+          id: 'crew-enhanced',
+          name: 'CrewAI Enhanced',
+          capabilities: ['data_analysis', 'report_generation', 'complex_analysis'],
+          performance: { avgTime: 4000, successRate: 0.92 }
+        });
+        
         // Register Claude with AI SDK
         const claudeSDK = new ClaudeAgentSDK();
         await claudeSDK.initialize({ model: 'sonnet-3.5' });
         agentManagerV2.registerAgent('claude-sdk', claudeSDK);
         
-        // Register CrewAI with AI SDK
-        const crewSDK = new CrewAIAgentSDK();
-        await crewSDK.initialize({ model: 'sonnet-3.5' });
-        agentManagerV2.registerAgent('crew-sdk', crewSDK);
-        
         // Register unified factory agents
         UnifiedAgentFactory.register('claude-sdk', ClaudeAgentSDK);
-        UnifiedAgentFactory.register('crew-sdk', CrewAIAgentSDK);
+        // Additional agents can be registered via plugins
         
         console.log('✅ AI SDK v5 agents initialized');
         console.log('🔧 AgentManagerV2 Configuration:', {
@@ -155,6 +249,7 @@ async function initializeSystem() {
           qualityControl: agentManagerV2.config.enableQualityControl,
           parallelProcessing: agentManagerV2.config.enableParallelProcessing
         });
+        console.log('🚀 Enhanced Agent Manager ecosystem ready');
       } catch (sdkError) {
         console.error('⚠️ AI SDK v5 initialization failed:', sdkError.message);
         useAISDKv5 = false;
@@ -431,36 +526,83 @@ function getErrorType(error) {
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
+  let claudeAvailable = false;
+  let errorMessage = null;
+  
   try {
     // Test Claude Code availability by running a simple query
-    const messages = [];
-    for await (const message of query({
-      prompt: "Say 'Hello' in one word",
-      options: {
-        maxTurns: 1,
-      },
-    })) {
-      messages.push(message);
-    }
+    console.log('🔍 [HEALTH] Testing Claude Code SDK...');
+    console.log('🔍 [HEALTH] query function type:', typeof query);
+    console.log('🔍 [HEALTH] query function:', query);
     
-    const lastMessage = messages[messages.length - 1];
-    const claudeAvailable = lastMessage && lastMessage.type === 'result' && !lastMessage.is_error;
+    const testPrompt = "Say 'Hello' in one word";
+    const testOptions = { maxTurns: 1 };
+    
+    console.log('🔍 [HEALTH] Test prompt:', testPrompt);
+    console.log('🔍 [HEALTH] Test options:', testOptions);
+    
+    const messages = [];
+    
+    try {
+      for await (const message of query({ prompt: testPrompt, options: testOptions })) {
+        messages.push(message);
+      }
+      
+      const lastMessage = messages[messages.length - 1];
+      claudeAvailable = lastMessage && lastMessage.type === 'result' && !lastMessage.is_error;
+    } catch (queryError) {
+      console.error('❌ [HEALTH] Query error:', queryError);
+      errorMessage = queryError.message;
+    }
+  } catch (error) {
+    console.error('❌ [HEALTH] General error:', error);
+    errorMessage = error.message;
+  }
+  
+  res.json({
+    status: 'ok',
+    claude_available: claudeAvailable,
+    error: errorMessage,
+    timestamp: Date.now(),
+    active_connections: activeConnections.size,
+    active_sessions: sessions.size
+  });
+});
+
+// MCP Health check endpoint
+app.get('/api/health/mcp', async (req, res) => {
+  try {
+    const status = mcpClient.getStatus();
+    const neo4jTest = mcpClient.connected ? await mcpClient.testConnection() : { success: false, message: 'MCP not connected' };
     
     res.json({
-      status: 'ok',
-      claude_available: claudeAvailable,
-      timestamp: Date.now(),
-      active_connections: activeConnections.size,
-      active_sessions: sessions.size
+      mcp: status,
+      neo4j: neo4jTest,
+      timestamp: Date.now()
     });
   } catch (error) {
+    res.status(500).json({
+      error: 'MCP health check failed',
+      message: error.message,
+      timestamp: Date.now()
+    });
+  }
+});
+
+// RAG Service Health check endpoint
+app.get('/api/health/rag', async (req, res) => {
+  try {
+    const status = ragService.getStatus();
+    
     res.json({
-      status: 'ok',
-      claude_available: false,
-      error: error.message,
-      timestamp: Date.now(),
-      active_connections: activeConnections.size,
-      active_sessions: sessions.size
+      rag: status,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'RAG service health check failed',
+      message: error.message,
+      timestamp: Date.now()
     });
   }
 });
@@ -843,6 +985,462 @@ app.post('/api/aisdk/configure', (req, res) => {
   }
 });
 
+// Memory management endpoints (Neo4j)
+app.get('/api/memory/search', async (req, res) => {
+  const { query, label, limit = 10, depth = 2 } = req.query;
+  
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'Memory system not available' });
+  }
+  
+  try {
+    const memories = await mcpClient.searchMemories({
+      query,
+      label,
+      limit: parseInt(limit),
+      depth: parseInt(depth)
+    });
+    
+    res.json({
+      success: true,
+      count: memories.length,
+      memories
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/memory/create', async (req, res) => {
+  const { label, properties } = req.body;
+  
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'Memory system not available' });
+  }
+  
+  try {
+    const memory = await mcpClient.createMemory({ label, properties });
+    
+    res.json({
+      success: true,
+      memory
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/memory/update/:nodeId', async (req, res) => {
+  const { nodeId } = req.params;
+  const { properties } = req.body;
+  
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'Memory system not available' });
+  }
+  
+  try {
+    const updated = await mcpClient.updateMemory({
+      nodeId: parseInt(nodeId),
+      properties
+    });
+    
+    res.json({
+      success: true,
+      updated
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/memory/delete/:nodeId', async (req, res) => {
+  const { nodeId } = req.params;
+  
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'Memory system not available' });
+  }
+  
+  try {
+    await mcpClient.deleteMemory({ nodeId: parseInt(nodeId) });
+    
+    res.json({
+      success: true,
+      message: `Memory ${nodeId} deleted`
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/memory/stats', async (req, res) => {
+  if (!memoryMiddleware) {
+    return res.status(503).json({ error: 'Memory middleware not initialized' });
+  }
+  
+  try {
+    const stats = memoryMiddleware.getStats();
+    
+    res.json({
+      success: true,
+      stats,
+      neo4j: {
+        connected: mcpClient?.connected || false
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/memory/export', async (req, res) => {
+  const { format = 'json' } = req.query;
+  
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'Memory system not available' });
+  }
+  
+  try {
+    // Buscar todas as memórias
+    const memories = await mcpClient.searchMemories({
+      limit: 1000,
+      depth: 3
+    });
+    
+    if (format === 'json') {
+      res.json({
+        export_date: new Date().toISOString(),
+        count: memories.length,
+        memories
+      });
+    } else {
+      res.status(400).json({ error: 'Unsupported format' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/memory/import', async (req, res) => {
+  const { memories } = req.body;
+  
+  if (!mcpClient || !mcpClient.connected) {
+    return res.status(503).json({ error: 'Memory system not available' });
+  }
+  
+  if (!Array.isArray(memories)) {
+    return res.status(400).json({ error: 'Invalid import data' });
+  }
+  
+  try {
+    let imported = 0;
+    let errors = 0;
+    
+    for (const memory of memories) {
+      try {
+        await mcpClient.createMemory({
+          label: memory.label || 'imported',
+          properties: memory.properties || memory
+        });
+        imported++;
+      } catch (e) {
+        errors++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      imported,
+      errors,
+      total: memories.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Memory Management Routes will be initialized after system startup
+
+// Plugin management endpoints
+app.get('/api/plugins', async (req, res) => {
+  try {
+    const status = pluginManager.getStatus();
+    const available = await pluginManager.listAvailablePlugins();
+    
+    res.json({
+      ...status,
+      available
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/plugins/:pluginId/enable', async (req, res) => {
+  const { pluginId } = req.params;
+  
+  try {
+    const success = await pluginManager.enablePlugin(pluginId);
+    
+    if (success) {
+      res.json({
+        message: `Plugin ${pluginId} enabled successfully`,
+        plugin: pluginManager.getPluginInfo(pluginId)
+      });
+    } else {
+      res.status(400).json({ error: `Failed to enable plugin ${pluginId}` });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/plugins/:pluginId/disable', async (req, res) => {
+  const { pluginId } = req.params;
+  
+  try {
+    const success = await pluginManager.disablePlugin(pluginId);
+    
+    if (success) {
+      res.json({
+        message: `Plugin ${pluginId} disabled successfully`
+      });
+    } else {
+      res.status(400).json({ error: `Failed to disable plugin ${pluginId}` });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/plugins/reload', async (req, res) => {
+  try {
+    await pluginManager.reloadAll();
+    res.json({
+      message: 'All plugins reloaded',
+      status: pluginManager.getStatus()
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Enhanced Agent Manager endpoints
+app.get('/api/enhanced/status', (req, res) => {
+  if (!enhancedAgentManager) {
+    return res.status(503).json({ 
+      enabled: false,
+      message: 'Enhanced Agent Manager not initialized' 
+    });
+  }
+  
+  res.json({
+    enabled: true,
+    agents: enhancedAgentManager.listAvailableAgents(),
+    metrics: enhancedAgentManager.getPerformanceMetrics(),
+    orchestrator: orchestratorService ? {
+      activeTasks: orchestratorService.getActiveTasksCount(),
+      strategy: orchestratorService.getLoadBalancingStrategy()
+    } : null,
+    quality: qualityController ? qualityController.getQualityMetrics() : null
+  });
+});
+
+app.post('/api/enhanced/execute', async (req, res) => {
+  if (!enhancedAgentManager) {
+    return res.status(503).json({ error: 'Enhanced Agent Manager not enabled' });
+  }
+  
+  const { task, options = {} } = req.body;
+  
+  if (!task || !task.content) {
+    return res.status(400).json({ error: 'Task content is required' });
+  }
+  
+  try {
+    const result = await enhancedAgentManager.executeTask(task, options);
+    res.json({
+      success: true,
+      result,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+app.get('/api/enhanced/agents', (req, res) => {
+  if (!enhancedAgentManager) {
+    return res.status(503).json({ error: 'Enhanced Agent Manager not enabled' });
+  }
+  
+  const agents = enhancedAgentManager.listAvailableAgents();
+  res.json({ agents, count: agents.length });
+});
+
+app.post('/api/enhanced/agents/register', (req, res) => {
+  if (!enhancedAgentManager) {
+    return res.status(503).json({ error: 'Enhanced Agent Manager not enabled' });
+  }
+  
+  const { agentConfig } = req.body;
+  
+  try {
+    enhancedAgentManager.registerAgent(agentConfig);
+    res.json({
+      success: true,
+      message: `Agent ${agentConfig.id} registered successfully`
+    });
+  } catch (error) {
+    res.status(400).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+app.delete('/api/enhanced/agents/:agentId', (req, res) => {
+  if (!enhancedAgentManager) {
+    return res.status(503).json({ error: 'Enhanced Agent Manager not enabled' });
+  }
+  
+  const { agentId } = req.params;
+  
+  try {
+    const success = enhancedAgentManager.unregisterAgent(agentId);
+    res.json({
+      success,
+      message: success ? `Agent ${agentId} removed` : `Agent ${agentId} not found`
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Orchestrator Service endpoints
+app.post('/api/orchestrator/decompose', async (req, res) => {
+  if (!orchestratorService) {
+    return res.status(503).json({ error: 'Orchestrator Service not enabled' });
+  }
+  
+  const { task } = req.body;
+  
+  try {
+    const decomposition = await orchestratorService.decomposeTask(task);
+    res.json({
+      success: true,
+      decomposition,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+app.post('/api/orchestrator/coordinate', async (req, res) => {
+  if (!orchestratorService) {
+    return res.status(503).json({ error: 'Orchestrator Service not enabled' });
+  }
+  
+  const { subtasks, executionPlan } = req.body;
+  
+  try {
+    const results = await orchestratorService.coordinateWorkers(subtasks, executionPlan);
+    res.json({
+      success: true,
+      results,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+app.get('/api/orchestrator/status', (req, res) => {
+  if (!orchestratorService) {
+    return res.status(503).json({ error: 'Orchestrator Service not enabled' });
+  }
+  
+  res.json({
+    activeTasks: orchestratorService.getActiveTasksCount(),
+    loadBalancer: orchestratorService.getLoadBalancingStrategy(),
+    workerPool: workerPool ? workerPool.getStatus() : null
+  });
+});
+
+// Worker Pool endpoints
+app.get('/api/workers/status', (req, res) => {
+  if (!workerPool) {
+    return res.status(503).json({ error: 'Worker Pool not enabled' });
+  }
+  
+  res.json(workerPool.getStatus());
+});
+
+app.get('/api/workers/metrics', (req, res) => {
+  if (!workerPool) {
+    return res.status(503).json({ error: 'Worker Pool not enabled' });
+  }
+  
+  res.json(workerPool.getMetrics());
+});
+
+// Quality Controller endpoints
+app.post('/api/quality/evaluate', async (req, res) => {
+  if (!qualityController) {
+    return res.status(503).json({ error: 'Quality Controller not enabled' });
+  }
+  
+  const { result, task } = req.body;
+  
+  try {
+    const evaluation = await qualityController.evaluateQuality(result, task);
+    res.json({
+      success: true,
+      evaluation,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+app.get('/api/quality/metrics', (req, res) => {
+  if (!qualityController) {
+    return res.status(503).json({ error: 'Quality Controller not enabled' });
+  }
+  
+  res.json(qualityController.getQualityMetrics());
+});
+
+app.get('/api/quality/trends', (req, res) => {
+  if (!qualityController) {
+    return res.status(503).json({ error: 'Quality Controller not enabled' });
+  }
+  
+  res.json(qualityController.analyzeImprovementTrends());
+});
+
+// Feedback Processor endpoints
+app.get('/api/feedback/learning', (req, res) => {
+  if (!feedbackProcessor) {
+    return res.status(503).json({ error: 'Feedback Processor not enabled' });
+  }
+  
+  res.json(feedbackProcessor.getLearningMetrics());
+});
+
 // Session management endpoints
 app.get('/api/sessions', (req, res) => {
   const sessionList = Array.from(sessions.entries()).map(([id, data]) => ({
@@ -1000,6 +1598,45 @@ io.on('connection', (socket) => {
         messages: [],
         title: message.length > 50 ? message.substring(0, 50) + '...' : message
       };
+      
+      // 🧠 INTEGRAÇÃO MEMORY MIDDLEWARE - TODAS AS MENSAGENS PASSAM PELO NEO4J
+      let enrichedMessage = { content: message, role: 'user' };
+      let memoryContext = null;
+      let userId = socket.id; // Por enquanto usando socket.id como userId
+      
+      if (memoryMiddleware) {
+        console.log('🧠 [MemoryMiddleware] Processing message through Neo4j memory...');
+        try {
+          const processedMessage = await memoryMiddleware.processMessage(
+            enrichedMessage,
+            userId,
+            currentSessionId
+          );
+          
+          // Usar o contexto enriquecido
+          if (processedMessage.context) {
+            memoryContext = processedMessage.context;
+            
+            // Se há mensagens anteriores relevantes, adicionar ao contexto
+            if (processedMessage.previousMessages && processedMessage.previousMessages.length > 0) {
+              console.log(`✅ [MemoryMiddleware] Found ${processedMessage.previousMessages.length} relevant previous messages`);
+            }
+            
+            // Se há memórias semânticas relacionadas
+            if (processedMessage.relatedMemories && processedMessage.relatedMemories.length > 0) {
+              console.log(`✅ [MemoryMiddleware] Found ${processedMessage.relatedMemories.length} related memories`);
+            }
+          }
+          
+          // Atualizar a mensagem com informações processadas
+          enrichedMessage = processedMessage;
+          
+          console.log(`✅ [MemoryMiddleware] Message processed with intent: ${processedMessage.intent}, sentiment: ${processedMessage.sentiment}`);
+        } catch (memoryError) {
+          console.error('❌ [MemoryMiddleware] Error:', memoryError);
+          // Continuar sem contexto em caso de erro
+        }
+      }
       
       // Check if user is asking about the project BEFORE adding to session
       const projectQuestions = [
@@ -1280,10 +1917,20 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
       };
       
       // Add system prompt if provided
-      let finalPrompt = message;
+      // 🧠 USAR MENSAGEM ENRIQUECIDA DO MEMORY MIDDLEWARE
+      console.log('🔍 [DEBUG] enrichedMessage:', enrichedMessage);
+      console.log('🔍 [DEBUG] message:', message);
+      
+      let finalPrompt = typeof enrichedMessage === 'string' ? enrichedMessage : enrichedMessage.content || message;
+      
+      console.log('🔍 [DEBUG] finalPrompt before systemPrompt:', finalPrompt);
+      
       if (systemPrompt) {
-        finalPrompt = `${systemPrompt}\n\nUser: ${message}`;
+        finalPrompt = `${systemPrompt}\n\nUser: ${finalPrompt}`;
       }
+      
+      console.log('🔍 [DEBUG] finalPrompt after systemPrompt:', finalPrompt);
+      console.log('🔍 [DEBUG] finalPrompt type:', typeof finalPrompt);
       
       // Add allowed tools if specified
       if (allowedTools.length > 0) {
@@ -1335,10 +1982,7 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
           timestamp: Date.now()
         });
         
-        for await (const msg of query({
-          prompt: finalPrompt,
-          options: queryOptions,
-        })) {
+        for await (const msg of query({ prompt: finalPrompt, options: queryOptions })) {
           messages.push(msg);
           console.log('🔄 [TRACE] Claude Code message received:', {
             type: msg.type,
@@ -1550,6 +2194,30 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
         sessionData.lastActivity = Date.now();
         sessions.set(currentSessionId, sessionData);
         
+        // 🧠 SALVAR RESPOSTA NO NEO4J VIA MEMORY MIDDLEWARE
+        if (memoryMiddleware) {
+          console.log('🧠 [MemoryMiddleware] Saving response to Neo4j...');
+          try {
+            await memoryMiddleware.saveInteraction({
+              message: message,  // Mensagem original do usuário
+              response: assistantResponse,
+              sessionId: currentSessionId,
+              context: memoryContext?.contextsUsed || [],
+              metadata: {
+                ...responseMetadata,
+                socketId: socket.id,
+                agent: 'claude',
+                hasContext: !!memoryContext,
+                contextItems: memoryContext?.itemsCount || 0
+              },
+              processingTime: Date.now() - userMessage.timestamp
+            });
+            console.log('✅ [MemoryMiddleware] Response saved to Neo4j');
+          } catch (saveError) {
+            console.error('❌ [MemoryMiddleware] Error saving to Neo4j:', saveError);
+          }
+        }
+        
         // Emit complete message
         console.log('📤 [TRACE] Emitting message_complete event:', {
           messageId: assistantMessage.id,
@@ -1605,9 +2273,199 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
     }
   });
 
+  // Enhanced Agent Manager Socket events
+  socket.on('enhanced:execute_task', async (data) => {
+    const { task, sessionId, options = {} } = data;
+    
+    if (!enhancedAgentManager) {
+      socket.emit('error', { message: 'Enhanced Agent Manager not enabled' });
+      return;
+    }
+    
+    try {
+      console.log('🎯 [Enhanced] Executing task with Enhanced Agent Manager');
+      
+      // Emit processing start
+      socket.emit('enhanced:task_started', {
+        sessionId,
+        taskId: task.id || `task-${Date.now()}`,
+        timestamp: Date.now()
+      });
+      
+      // Execute task
+      const result = await enhancedAgentManager.executeTask(task, options);
+      
+      // Emit result
+      socket.emit('enhanced:task_complete', {
+        sessionId,
+        result,
+        timestamp: Date.now()
+      });
+      
+      // Update metrics in real-time
+      socket.emit('enhanced:metrics_update', {
+        sessionId,
+        metrics: enhancedAgentManager.getPerformanceMetrics(),
+        timestamp: Date.now()
+      });
+      
+    } catch (error) {
+      console.error('❌ [Enhanced] Task execution error:', error);
+      socket.emit('enhanced:task_error', {
+        sessionId,
+        error: error.message,
+        timestamp: Date.now()
+      });
+    }
+  });
+  
+  // Orchestrator Socket events
+  socket.on('orchestrator:decompose', async (data) => {
+    const { task, sessionId } = data;
+    
+    if (!orchestratorService) {
+      socket.emit('error', { message: 'Orchestrator Service not enabled' });
+      return;
+    }
+    
+    try {
+      console.log('📊 [Orchestrator] Decomposing task');
+      
+      const decomposition = await orchestratorService.decomposeTask(task);
+      
+      socket.emit('orchestrator:decomposition_complete', {
+        sessionId,
+        decomposition,
+        timestamp: Date.now()
+      });
+      
+    } catch (error) {
+      console.error('❌ [Orchestrator] Decomposition error:', error);
+      socket.emit('orchestrator:error', {
+        sessionId,
+        error: error.message,
+        timestamp: Date.now()
+      });
+    }
+  });
+  
+  socket.on('orchestrator:coordinate', async (data) => {
+    const { subtasks, executionPlan, sessionId } = data;
+    
+    if (!orchestratorService) {
+      socket.emit('error', { message: 'Orchestrator Service not enabled' });
+      return;
+    }
+    
+    try {
+      console.log('🔄 [Orchestrator] Coordinating workers');
+      
+      // Emit coordination start
+      socket.emit('orchestrator:coordination_started', {
+        sessionId,
+        subtaskCount: subtasks.length,
+        timestamp: Date.now()
+      });
+      
+      const results = await orchestratorService.coordinateWorkers(subtasks, executionPlan);
+      
+      socket.emit('orchestrator:coordination_complete', {
+        sessionId,
+        results,
+        timestamp: Date.now()
+      });
+      
+    } catch (error) {
+      console.error('❌ [Orchestrator] Coordination error:', error);
+      socket.emit('orchestrator:error', {
+        sessionId,
+        error: error.message,
+        timestamp: Date.now()
+      });
+    }
+  });
+  
+  // Quality Control Socket events
+  socket.on('quality:evaluate', async (data) => {
+    const { result, task, sessionId } = data;
+    
+    if (!qualityController) {
+      socket.emit('error', { message: 'Quality Controller not enabled' });
+      return;
+    }
+    
+    try {
+      console.log('🔍 [Quality] Evaluating result quality');
+      
+      const evaluation = await qualityController.evaluateQuality(result, task);
+      
+      socket.emit('quality:evaluation_complete', {
+        sessionId,
+        evaluation,
+        passed: evaluation.passed,
+        timestamp: Date.now()
+      });
+      
+      // Emit quality metrics update
+      socket.emit('quality:metrics_update', {
+        sessionId,
+        metrics: qualityController.getQualityMetrics(),
+        timestamp: Date.now()
+      });
+      
+    } catch (error) {
+      console.error('❌ [Quality] Evaluation error:', error);
+      socket.emit('quality:error', {
+        sessionId,
+        error: error.message,
+        timestamp: Date.now()
+      });
+    }
+  });
+  
+  // Worker Pool Socket events
+  socket.on('workers:get_status', () => {
+    if (!workerPool) {
+      socket.emit('error', { message: 'Worker Pool not enabled' });
+      return;
+    }
+    
+    socket.emit('workers:status_update', {
+      status: workerPool.getStatus(),
+      metrics: workerPool.getMetrics(),
+      timestamp: Date.now()
+    });
+  });
+  
+  // Real-time metrics broadcasting
+  socket.on('metrics:subscribe', () => {
+    console.log('📊 Client subscribed to metrics updates');
+    
+    // Send initial metrics
+    const metricsData = {
+      enhanced: enhancedAgentManager ? enhancedAgentManager.getPerformanceMetrics() : null,
+      quality: qualityController ? qualityController.getQualityMetrics() : null,
+      workers: workerPool ? workerPool.getMetrics() : null,
+      orchestrator: orchestratorService ? {
+        activeTasks: orchestratorService.getActiveTasksCount()
+      } : null,
+      timestamp: Date.now()
+    };
+    
+    socket.emit('metrics:initial', metricsData);
+    
+    // Store subscription
+    socket.isMetricsSubscribed = true;
+  });
+  
+  socket.on('metrics:unsubscribe', () => {
+    console.log('📊 Client unsubscribed from metrics updates');
+    socket.isMetricsSubscribed = false;
+  });
+
   // Enhanced message handler with Context Engine
   socket.on('send_message_with_context', async (data) => {
-    console.log('🧠 [Context] Processing message with Context Engine');
+    console.log('🧠 [Context] Processing message with Context Engine + MemoryMiddleware');
     
     const { message, sessionId, agentType = 'claude', useMemory = true } = data;
     
@@ -1617,15 +2475,17 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
     }
     
     const currentSessionId = sessionId || uuidv4();
+    const userId = socket.id; // Usar socket.id como userId
     
     try {
-      // Use Context Engine for processing
+      // Use Context Engine for processing (que já integra MemoryMiddleware)
       if (contextEngine) {
         const result = await contextEngine.processMessage(message, currentSessionId, {
           agentType,
           useMemory,
           saveToMemory: true,
-          streaming: data.streaming || false
+          streaming: data.streaming || false,
+          userId  // Passar userId para o Context Engine
         });
         
         // Add messages to session
@@ -2027,10 +2887,7 @@ Responda APENAS com o JSON, sem explicações.`,
               let fullResponse = '';
               
               // Usar o mesmo padrão que funciona no handler send_message
-              for await (const msg of query({
-                prompt: intentPrompt.prompt,
-                options: intentPrompt.options
-              })) {
+              for await (const msg of query({ prompt: intentPrompt.prompt, options: intentPrompt.options })) {
                 if (msg.type === 'result' && !msg.is_error && msg.result) {
                   fullResponse = msg.result;
                   console.log('✅ Query result (intent):', {
@@ -2127,10 +2984,7 @@ Seja específico, amigável e informativo.`,
               });
               
               // Usar o mesmo padrão que funciona no handler send_message
-              for await (const msg of query({
-                prompt: responsePrompt.prompt,
-                options: responsePrompt.options
-              })) {
+              for await (const msg of query({ prompt: responsePrompt.prompt, options: responsePrompt.options })) {
                 if (msg.type === 'result' && !msg.is_error && msg.result) {
                   fullFinalResponse = msg.result;
                   console.log('✅ Query result (response):', {
@@ -2161,10 +3015,7 @@ Seja específico, amigável e informativo.`,
                 let directResponse = '';
                 
                 // Usar o mesmo padrão que funciona no handler send_message
-                for await (const msg of query({
-                  prompt: message,
-                  options: { maxTurns: 1 }
-                })) {
+                for await (const msg of query({ prompt: message, options: { maxTurns: 1 } })) {
                   if (msg.type === 'result' && !msg.is_error && msg.result) {
                     directResponse = msg.result;
                     console.log('✅ Query result (fallback):', {
@@ -2218,10 +3069,7 @@ Seja específico, amigável e informativo.`,
           // Para outros agentes, usar Claude Code SDK normal
           console.log('🚀 [A2A] Starting Claude Code SDK query');
           try {
-            for await (const msg of query({
-              prompt: finalPrompt,
-              options: queryOptions,
-            })) {
+            for await (const msg of query({ prompt: finalPrompt, options: queryOptions })) {
               if (msg.type === 'text') {
                 assistantResponse += msg.text;
                 socket.emit('stream', {
@@ -2438,8 +3286,41 @@ Please provide a thorough analysis of this file.`;
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
     activeConnections.delete(socket.id);
+    socket.isMetricsSubscribed = false;
   });
 });
+
+// Real-time metrics broadcasting
+setInterval(() => {
+  if (io && enhancedAgentManager) {
+    const metricsData = {
+      enhanced: enhancedAgentManager.getPerformanceMetrics(),
+      quality: qualityController ? qualityController.getQualityMetrics() : null,
+      workers: workerPool ? workerPool.getMetrics() : null,
+      orchestrator: orchestratorService ? {
+        activeTasks: orchestratorService.getActiveTasksCount()
+      } : null,
+      timestamp: Date.now()
+    };
+    
+    // Broadcast to subscribed clients
+    io.sockets.sockets.forEach(socket => {
+      if (socket.isMetricsSubscribed) {
+        socket.emit('metrics:update', metricsData);
+      }
+    });
+  }
+}, 5000); // Broadcast every 5 seconds
+
+// Cleanup interval
+setInterval(() => {
+  if (workerPool) {
+    workerPool.cleanup();
+  }
+  if (qualityController) {
+    qualityController.cleanupOldFeedback();
+  }
+}, 300000); // Cleanup every 5 minutes
 
 // Start server
 const PORT = process.env.PORT || 8080;
@@ -2452,4 +3333,7 @@ server.listen(PORT, () => {
   console.log('  • Conversation export');
   console.log('  • Advanced Claude Code SDK integration');
   console.log('  • WebSocket connections for real-time updates');
+  console.log('  • Enhanced Agent Manager with Orchestrator-Worker pattern');
+  console.log('  • Quality Control and Feedback Loops');
+  console.log('  • Real-time metrics and monitoring');
 });

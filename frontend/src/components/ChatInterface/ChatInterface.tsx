@@ -125,7 +125,7 @@ export const ChatInterface: React.FC = () => {
                 onClick={() => setShowAgents(!showAgents)}
               >
                 <span className="agent-icon">
-                  {state.selectedAgent === 'crew-ai' ? '👥' : '🤖'}
+                  🤖
                 </span>
                 <span className="agent-name">
                   {state.selectedAgent || 'Auto'}

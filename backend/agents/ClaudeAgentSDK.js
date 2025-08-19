@@ -4,7 +4,7 @@
  */
 
 const { generateText, generateObject, streamText } = require('ai');
-const { claudeCode } = require('ai-sdk-provider-claude-code');
+const { claudeCode } = require('../../providers/ai-sdk-provider');
 const { z } = require('zod');
 const BaseAgent = require('./BaseAgent');
 
@@ -38,7 +38,7 @@ class ClaudeAgentSDK extends BaseAgent {
     super('claude-sdk', 'Claude with AI SDK v5');
     
     // Initialize AI SDK provider
-    this.model = claudeCode('claude-3-5-sonnet-20241022');
+    this.model = claudeCode('opus');
     
     // Configuration
     this.config = {
