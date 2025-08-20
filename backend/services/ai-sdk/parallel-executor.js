@@ -5,7 +5,7 @@
 
 const { generateObject, generateText } = require('ai');
 const { z } = require('zod');
-const { claudeCode } = require('../../../providers/ai-sdk-provider');
+const { claudeCode } = require('../../providers/ai-sdk-provider');
 
 // Schema para parallel execution plan
 const ParallelExecutionPlanSchema = z.object({

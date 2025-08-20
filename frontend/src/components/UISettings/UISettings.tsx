@@ -16,8 +16,18 @@ interface UISettingsProps {
     enableConsoleLogs: boolean;
     showSessionInfo: boolean;
     showCostEstimates: boolean;
+    expandedByDefault: boolean;
     processingViewMode?: 'minimize' | 'compact' | 'full' | 'hidden';
     messageViewMode?: 'minimal' | 'standard' | 'detailed' | 'developer';
+    
+    // Processing Steps Control
+    showSystemStep: boolean;
+    showInitializingStep: boolean;
+    showConnectingStep: boolean;
+    showThinkingStep: boolean;
+    showToolSteps: boolean;
+    showStreamingStep: boolean;
+    showFinalizingStep: boolean;
   };
   onSettingsChange: (settings: any) => void;
   onClose: () => void;
@@ -169,6 +179,26 @@ export const UISettings: React.FC<UISettingsProps> = ({
                   type="checkbox"
                   checked={settings.autoExpandLogs}
                   onChange={() => handleToggle('autoExpandLogs')}
+                />
+                <span className="ui-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="expandedByDefault">
+                  📄 Mensagens Expandidas por Padrão
+                </label>
+                <p className="ui-setting-description">
+                  Mostra mensagens longas completamente expandidas ao invés de colapsadas
+                </p>
+              </div>
+              <label className="ui-toggle">
+                <input
+                  id="expandedByDefault"
+                  type="checkbox"
+                  checked={settings.expandedByDefault}
+                  onChange={() => handleToggle('expandedByDefault')}
                 />
                 <span className="ui-toggle-slider"></span>
               </label>
@@ -379,6 +409,154 @@ export const UISettings: React.FC<UISettingsProps> = ({
                   type="checkbox"
                   checked={settings.compactMode}
                   onChange={() => handleToggle('compactMode')}
+                />
+                <span className="ui-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          {/* Seção Processing Steps Control */}
+          <div className="ui-settings-section">
+            <h3>⚙️ CONTROLE DE ETAPAS</h3>
+            <div className="ui-setting-section-description">
+              Configure quais etapas do processamento exibir durante a execução
+            </div>
+            
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="showSystemStep">
+                  System Processing
+                </label>
+                <p className="ui-setting-description">
+                  Mostra etapa "Processing: system" (só relevante com System Prompt configurado)
+                </p>
+              </div>
+              <label className="ui-toggle">
+                <input
+                  id="showSystemStep"
+                  type="checkbox"
+                  checked={settings.showSystemStep}
+                  onChange={() => handleToggle('showSystemStep')}
+                />
+                <span className="ui-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="showInitializingStep">
+                  Inicialização
+                </label>
+                <p className="ui-setting-description">
+                  Mostra "Initializing Claude Code SDK..."
+                </p>
+              </div>
+              <label className="ui-toggle">
+                <input
+                  id="showInitializingStep"
+                  type="checkbox"
+                  checked={settings.showInitializingStep}
+                  onChange={() => handleToggle('showInitializingStep')}
+                />
+                <span className="ui-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="showConnectingStep">
+                  Conexão
+                </label>
+                <p className="ui-setting-description">
+                  Mostra "Establishing connection to Claude API..."
+                </p>
+              </div>
+              <label className="ui-toggle">
+                <input
+                  id="showConnectingStep"
+                  type="checkbox"
+                  checked={settings.showConnectingStep}
+                  onChange={() => handleToggle('showConnectingStep')}
+                />
+                <span className="ui-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="showThinkingStep">
+                  Análise
+                </label>
+                <p className="ui-setting-description">
+                  Mostra "Claude is analyzing your request..."
+                </p>
+              </div>
+              <label className="ui-toggle">
+                <input
+                  id="showThinkingStep"
+                  type="checkbox"
+                  checked={settings.showThinkingStep}
+                  onChange={() => handleToggle('showThinkingStep')}
+                />
+                <span className="ui-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="showToolSteps">
+                  Ferramentas
+                </label>
+                <p className="ui-setting-description">
+                  Mostra etapas de execução de ferramentas "Executing tool: [nome]"
+                </p>
+              </div>
+              <label className="ui-toggle">
+                <input
+                  id="showToolSteps"
+                  type="checkbox"
+                  checked={settings.showToolSteps}
+                  onChange={() => handleToggle('showToolSteps')}
+                />
+                <span className="ui-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="showStreamingStep">
+                  Streaming
+                </label>
+                <p className="ui-setting-description">
+                  Mostra "Streaming response content..." (geralmente redundante)
+                </p>
+              </div>
+              <label className="ui-toggle">
+                <input
+                  id="showStreamingStep"
+                  type="checkbox"
+                  checked={settings.showStreamingStep}
+                  onChange={() => handleToggle('showStreamingStep')}
+                />
+                <span className="ui-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="showFinalizingStep">
+                  Finalização
+                </label>
+                <p className="ui-setting-description">
+                  Mostra "Finalizing response..." (muito rápido, raramente útil)
+                </p>
+              </div>
+              <label className="ui-toggle">
+                <input
+                  id="showFinalizingStep"
+                  type="checkbox"
+                  checked={settings.showFinalizingStep}
+                  onChange={() => handleToggle('showFinalizingStep')}
                 />
                 <span className="ui-toggle-slider"></span>
               </label>

@@ -23,6 +23,7 @@ const OrchestratorService = require('./services/OrchestratorService');
 const QualityController = require('./services/QualityController');
 const { config, validateConfig } = require('./config/ai-sdk.config');
 const WorkerPool = require('./integrations/WorkerPool');
+const HealthChecker = require('./services/health-checker');
 const FeedbackProcessor = require('./integrations/FeedbackProcessor');
 const TelemetryMonitor = require('./integrations/TelemetryMonitor');
 const StructuredOutputProcessor = require('./integrations/StructuredOutputProcessor');
@@ -270,6 +271,9 @@ const pluginManager = new PluginManager({
 
 // Initialize Memory Middleware
 let memoryMiddleware = null;
+
+// Initialize Health Checker
+const healthChecker = new HealthChecker();
 
 // Initialize all systems
 async function initializeSystem() {
@@ -673,60 +677,34 @@ function getErrorType(error) {
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
-  let claudeAvailable = false;
-  let errorMessage = null;
-  
   try {
-    // Test Claude Code availability by running a simple query
-    console.log('🔍 [HEALTH] Testing Claude Code SDK...');
-    console.log('🔍 [HEALTH] query function type:', typeof query);
-    console.log('🔍 [HEALTH] query function:', query);
-    
-    const testPrompt = "Say 'Hello' in one word";
-    const testOptions = { maxTurns: 1 };
-    
-    console.log('🔍 [HEALTH] Test prompt:', testPrompt);
-    console.log('🔍 [HEALTH] Test options:', testOptions);
-    
-    const messages = [];
-    
-    try {
-      for await (const message of query({ prompt: testPrompt, options: testOptions })) {
-        messages.push(message);
-      }
-      
-      const lastMessage = messages[messages.length - 1];
-      claudeAvailable = lastMessage && lastMessage.type === 'result' && !lastMessage.is_error;
-    } catch (queryError) {
-      console.error('❌ [HEALTH] Query error:', queryError);
-      
-      // Detectar limite do Claude atingido
-      if (queryError.message.includes('Claude Code process exited with code 1')) {
-        const resetTime = await getClaudeResetTime();
-        if (resetTime) {
-          errorMessage = `⚠️ Claude usage limit reached. Your limit will reset at ${resetTime}. Please try again after this time.`;
-          console.log(`⏰ [CLAUDE] Limite será resetado: ${resetTime}`);
-        } else {
-          errorMessage = '⚠️ Claude usage limit reached. Your limit will reset soon. Please try again later.';
-        }
-        console.warn('⚠️ [CLAUDE] Usage limit reached - Claude Code SDK unavailable temporarily');
-      } else {
-        errorMessage = queryError.message;
-      }
+    // Use cached status if available and recent
+    const cached = healthChecker.getCachedStatus();
+    if (cached && !req.query.force) {
+      return res.json(cached);
     }
+
+    // Perform full health check
+    const healthStatus = await healthChecker.performFullCheck({
+      mcpClient,
+      agentManagerV2,
+      a2aClient,
+      io
+    });
+
+    // Set appropriate HTTP status code based on health
+    const httpStatus = healthStatus.status === 'unhealthy' ? 503 : 
+                       healthStatus.status === 'degraded' ? 200 : 200;
+
+    res.status(httpStatus).json(healthStatus);
   } catch (error) {
-    console.error('❌ [HEALTH] General error:', error);
-    errorMessage = error.message;
+    console.error('❌ [HEALTH] Health check error:', error);
+    res.status(500).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
-  
-  res.json({
-    status: 'ok',
-    claude_available: claudeAvailable,
-    error: errorMessage,
-    timestamp: Date.now(),
-    active_connections: activeConnections.size,
-    active_sessions: sessions.size
-  });
 });
 
 // MCP Health check endpoint
@@ -3279,5 +3257,13 @@ server.listen(PORT, () => {
   console.log('  • WebSocket connections for real-time updates');
   console.log('  • Enhanced Agent Manager with Orchestrator-Worker pattern');
   console.log('  • Quality Control and Feedback Loops');
+  
+  // Start health monitoring
+  healthChecker.startMonitoring({
+    mcpClient,
+    agentManagerV2,
+    a2aClient,
+    io
+  }, 30000); // Check every 30 seconds
   console.log('  • Real-time metrics and monitoring');
 });

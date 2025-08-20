@@ -5,7 +5,7 @@
 
 const { generateObject, generateText } = require('ai');
 const { z } = require('zod');
-const { claudeCode } = require('../../../providers/ai-sdk-provider');
+const { claudeCode } = require('../../providers/ai-sdk-provider');
 
 // Common schemas for structured outputs
 const CommonSchemas = {

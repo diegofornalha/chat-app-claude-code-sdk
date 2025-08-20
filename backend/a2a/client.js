@@ -1,10 +1,11 @@
 /**
  * Cliente A2A para o Chat App
- * Conecta e orquestra múltiplos agentes A2A
+ * Conecta e orquestra múltiplos agentes A2A com discovery automático
  */
 
 const { EventEmitter } = require('events');
 const WebSocket = require('ws');
+const AgentDiscovery = require('./agent-discovery');
 
 class A2AClient extends EventEmitter {
   constructor() {
@@ -13,6 +14,36 @@ class A2AClient extends EventEmitter {
     this.activeTasks = new Map(); // Tarefas em execução
     this.connections = new Map(); // Conexões WebSocket com agentes
     this.selectedAgent = null; // Agente atualmente selecionado
+    
+    // Inicializar serviço de discovery
+    this.discovery = new AgentDiscovery();
+    this.setupDiscoveryListeners();
+    
+    // Iniciar discovery automático
+    this.discovery.startAutoDiscovery();
+  }
+
+  /**
+   * Configurar listeners do discovery
+   */
+  setupDiscoveryListeners() {
+    this.discovery.on('agents_discovered', (agents) => {
+      // Só logar se houver agentes
+      if (agents.length > 0) {
+        console.log(`🔍 [A2A] ${agents.length} agentes descobertos`);
+      }
+      for (const agent of agents) {
+        this.agents.set(agent.id, agent);
+      }
+      this.emit('agents:updated', this.listAgents());
+    });
+
+    this.discovery.on('discovery_complete', (agents) => {
+      // Só logar se houver agentes
+      if (agents.length > 0) {
+        console.log(`✅ [A2A] Discovery completo: ${agents.length} agentes disponíveis`);
+      }
+    });
   }
 
   /**
@@ -188,7 +219,7 @@ class A2AClient extends EventEmitter {
   }
 
   /**
-   * Enviar tarefa para o agente selecionado
+   * Enviar tarefa para o agente selecionado (real ou mock)
    */
   async sendTask(task, options = {}) {
     if (!this.selectedAgent) {
@@ -214,6 +245,12 @@ class A2AClient extends EventEmitter {
     };
 
     this.activeTasks.set(taskId, taskRecord);
+
+    // Verificar se é um mock agent
+    if (agent.endpoint && agent.endpoint.startsWith('mock://')) {
+      console.log(`🤖 [A2A] Processando com mock agent: ${agent.name}`);
+      return await this.processMockTask(taskId, agent, task, options);
+    }
 
     try {
       // Garantir que task é uma string
@@ -414,6 +451,48 @@ class A2AClient extends EventEmitter {
     }
 
     return await response.json();
+  }
+
+  /**
+   * Processar tarefa com mock agent
+   */
+  async processMockTask(taskId, agent, task, options) {
+    const taskRecord = this.activeTasks.get(taskId);
+    
+    try {
+      // Atualizar status
+      taskRecord.status = 'processing';
+      
+      // Processar com mock
+      const result = await this.discovery.processMockMessage(agent.id, task);
+      
+      // Atualizar registro
+      taskRecord.status = 'completed';
+      taskRecord.result = result.response;
+      taskRecord.completed_at = new Date().toISOString();
+      
+      // Emitir eventos
+      this.emit('task:completed', {
+        id: taskId,
+        agent: agent.name,
+        result: result.response,
+        isMock: true
+      });
+      
+      return taskRecord;
+      
+    } catch (error) {
+      taskRecord.status = 'error';
+      taskRecord.error = error.message;
+      
+      this.emit('task:error', {
+        id: taskId,
+        agent: agent.name,
+        error: error.message
+      });
+      
+      throw error;
+    }
   }
 
   /**

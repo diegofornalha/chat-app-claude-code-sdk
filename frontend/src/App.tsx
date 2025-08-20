@@ -5,7 +5,6 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { io, Socket } from 'socket.io-client';
 import { ProcessingIndicator } from './components/ProcessingIndicator/ProcessingIndicator';
 import { UISettings as UISettingsComponent } from './components/UISettings/UISettings';
-import SystemMetrics from './components/SystemMetrics/SystemMetrics';
 import { useMessageManager } from './hooks/useMessageManager';
 import { Message, Session, FileUploadResult, ChatSettings, UISettings, ConnectionStats } from './types';
 
@@ -383,6 +382,7 @@ const ClaudeChat = () => {
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [creatingSession, setCreatingSession] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
   const [connected, setConnected] = useState<boolean | null>(null);
   const [claudeStatus, setClaudeStatus] = useState<{
@@ -460,7 +460,6 @@ const ClaudeChat = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showUISettings, setShowUISettings] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
-  const [showSystemMetrics, setShowSystemMetrics] = useState(false);
   const [connectionStats, setConnectionStats] = useState<ConnectionStats>({ active_connections: 0, active_sessions: 0 });
   const [settings, setSettings] = useState<ChatSettings>({
     systemPrompt: '',
@@ -492,12 +491,22 @@ const ClaudeChat = () => {
       enableConsoleLogs: true,
       showSessionInfo: true,
       showCostEstimates: true,
+      expandedByDefault: false,
       enableAIConcierge: false,
       enableStepByStep: false,
       enableQuickActions: false,
       enableCostTracking: false,
       processingViewMode: 'compact' as 'minimize' | 'compact' | 'full' | 'hidden',
-      messageViewMode: 'standard' as 'minimal' | 'standard' | 'detailed' | 'developer'
+      messageViewMode: 'standard' as 'minimal' | 'standard' | 'detailed' | 'developer',
+      
+      // Processing Steps Control - Padrões inteligentes
+      showSystemStep: false, // Desabilitado por padrão (só relevante com systemPrompt)
+      showInitializingStep: true,
+      showConnectingStep: true,
+      showThinkingStep: true,
+      showToolSteps: true,
+      showStreamingStep: false, // Normalmente redundante com typing indicator
+      showFinalizingStep: false // Rápido demais para ser útil
     };
   };
 
@@ -607,6 +616,7 @@ const ClaudeChat = () => {
       
       if (message.sessionId) {
         setSessionId(message.sessionId);
+        setCreatingSession(false);
       }
     });
     
@@ -669,6 +679,7 @@ const ClaudeChat = () => {
       
       setSessionId(session.id);
       setSessions(prev => [session, ...prev]);
+      setCreatingSession(false);
     });
     
     newSocket.on('session_loaded', (session: Session) => {
@@ -767,7 +778,8 @@ const ClaudeChat = () => {
     try {
       const response = await fetch(`${API_BASE}/health`);
       const data = await response.json();
-      setConnected(data.claude_available);
+      // Não sobrescrever o estado de conexão WebSocket com claude_available
+      // setConnected(data.claude_available);
       if (data.active_connections !== undefined) {
         setConnectionStats({
           active_connections: data.active_connections,
@@ -776,7 +788,8 @@ const ClaudeChat = () => {
       }
     } catch (error) {
       if (uiSettings.enableConsoleLogs) console.error('Health check failed:', error);
-      setConnected(false);
+      // Não alterar o estado de conexão em caso de erro do health check
+      // setConnected(false);
     }
   }, [uiSettings.enableConsoleLogs]);
 
@@ -788,12 +801,18 @@ const ClaudeChat = () => {
   }, [uiSettings.enableConsoleLogs]);
 
   const sendMessage = useCallback(async () => {
-    if (!input.trim() || !socket || !sessionId) {
-      if (uiSettings.enableConsoleLogs && !sessionId) {
-        console.error('SessionId not defined');
-      }
-      if (!sessionId) alert('Sessão não inicializada. Por favor, recarregue a página.');
+    if (!input.trim() || !socket) {
       return;
+    }
+    
+    // Se não há sessão, será criada automaticamente pelo backend
+    const currentSessionId = sessionId || `temp-${Date.now()}`;
+    
+    if (!sessionId) {
+      setCreatingSession(true);
+      if (uiSettings.enableConsoleLogs) {
+        console.log('📝 Creating new session automatically...');
+      }
     }
 
     const messageId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -807,7 +826,7 @@ const ClaudeChat = () => {
       const messageData = {
         message: messageContent,
         content: messageContent,
-        sessionId,
+        sessionId: currentSessionId,
         messageId,
         agent: selectedAgent,
         useAgent: !!selectedAgent
@@ -1078,13 +1097,6 @@ const ClaudeChat = () => {
               active={showUISettings}
             >
               UI Config
-            </HeaderButton>
-            <HeaderButton
-              onClick={() => setShowSystemMetrics(!showSystemMetrics)}
-              active={showSystemMetrics}
-              variant="success"
-            >
-              📊 Metrics
             </HeaderButton>
             <HeaderButton
               onClick={() => setShowFileUpload(!showFileUpload)}
@@ -1447,16 +1459,6 @@ const ClaudeChat = () => {
         </div>
       )}
 
-      {/* System Metrics Panel */}
-      {showSystemMetrics && (
-        <div className="border-b" style={{ borderColor: colors.border }}>
-          <SystemMetrics
-            serverUrl="http://localhost:8080"
-            showDetailedMetrics={uiSettings.showDetailedMetrics}
-          />
-        </div>
-      )}
-
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">
@@ -1554,14 +1556,14 @@ const ClaudeChat = () => {
                       className="flex items-center space-x-1 mb-2 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
                       style={{ color: message.type === 'user' ? colors.surface : colors.textTertiary }}
                     >
-                      <span>{expandedMessages.has(message.id) ? '📖' : '📄'}</span>
-                      <span>{expandedMessages.has(message.id) ? 'Mostrar menos' : 'Mostrar tudo'}</span>
+                      <span>{(uiSettings.expandedByDefault ? !expandedMessages.has(message.id) : expandedMessages.has(message.id)) ? '📖' : '📄'}</span>
+                      <span>{(uiSettings.expandedByDefault ? !expandedMessages.has(message.id) : expandedMessages.has(message.id)) ? 'Mostrar menos' : 'Mostrar tudo'}</span>
                     </button>
                   )}
                   
                   <div style={{
-                                      maxHeight: getMessageContent(message.content).length > 500 && !expandedMessages.has(message.id) ? '150px' : 'none',
-                  overflow: getMessageContent(message.content).length > 500 && !expandedMessages.has(message.id) ? 'hidden' : 'visible',
+                                      maxHeight: getMessageContent(message.content).length > 500 && (uiSettings.expandedByDefault ? expandedMessages.has(message.id) : !expandedMessages.has(message.id)) ? '150px' : 'none',
+                  overflow: getMessageContent(message.content).length > 500 && (uiSettings.expandedByDefault ? expandedMessages.has(message.id) : !expandedMessages.has(message.id)) ? 'hidden' : 'visible',
                     position: 'relative'
                   }}>
                     {message.type === 'assistant' ? (
@@ -1578,7 +1580,7 @@ const ClaudeChat = () => {
                     )}
                     
                     {/* Gradient overlay quando colapsado (mensagens longas) */}
-                    {getMessageContent(message.content).length > 500 && !expandedMessages.has(message.id) && (
+                    {getMessageContent(message.content).length > 500 && (uiSettings.expandedByDefault ? expandedMessages.has(message.id) : !expandedMessages.has(message.id)) && (
                       <div 
                         style={{
                           position: 'absolute',
@@ -1618,15 +1620,30 @@ const ClaudeChat = () => {
                 autoExpand={uiSettings.autoExpandLogs}
                 animationsEnabled={uiSettings.animationsEnabled}
                 viewMode={uiSettings.processingViewMode}
+                stepFilters={{
+                  showSystemStep: uiSettings.showSystemStep,
+                  showInitializingStep: uiSettings.showInitializingStep,
+                  showConnectingStep: uiSettings.showConnectingStep,
+                  showThinkingStep: uiSettings.showThinkingStep,
+                  showToolSteps: uiSettings.showToolSteps,
+                  showStreamingStep: uiSettings.showStreamingStep,
+                  showFinalizingStep: uiSettings.showFinalizingStep
+                }}
               />
             </div>
           )}
           
           {currentStreamingContent && (() => {
             const contentStr = typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent);
+            const streamingMessageId = 'streaming-message';
+            const isLongMessage = contentStr.length > 500;
+            const isExpanded = uiSettings.expandedByDefault ? !expandedMessages.has(streamingMessageId) : expandedMessages.has(streamingMessageId);
+            
             console.log('🌊 [TRACE] Rendering streaming content in UI:', {
               contentLength: contentStr.length,
-              preview: contentStr.substring(0, 50) + '...'
+              preview: contentStr.substring(0, 50) + '...',
+              isLongMessage,
+              isExpanded
             });
             
             return (
@@ -1640,12 +1657,62 @@ const ClaudeChat = () => {
                   boxShadow: `0 1px 3px ${colors.overlayLight}, 0 0 0 1px ${colors.accentLight}`
                 }}
               >
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={MarkdownComponents}
-                >
-                  {typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent || '')}
-                </ReactMarkdown>
+                {/* Botão Mostrar tudo/menos para streaming se mensagem longa */}
+                {isLongMessage && (
+                  <button
+                    onClick={() => {
+                      const newExpanded = new Set(expandedMessages);
+                      if (uiSettings.expandedByDefault) {
+                        if (newExpanded.has(streamingMessageId)) {
+                          newExpanded.delete(streamingMessageId);
+                        } else {
+                          newExpanded.add(streamingMessageId);
+                        }
+                      } else {
+                        if (newExpanded.has(streamingMessageId)) {
+                          newExpanded.delete(streamingMessageId);
+                        } else {
+                          newExpanded.add(streamingMessageId);
+                        }
+                      }
+                      setExpandedMessages(newExpanded);
+                    }}
+                    className="flex items-center space-x-1 mb-2 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ color: colors.textTertiary }}
+                  >
+                    <span>{isExpanded ? '📖' : '📄'}</span>
+                    <span>{isExpanded ? 'Mostrar menos' : 'Mostrar tudo'}</span>
+                    <span className="text-xs opacity-60">(streaming)</span>
+                  </button>
+                )}
+                
+                <div style={{
+                  maxHeight: isLongMessage && !isExpanded ? '150px' : 'none',
+                  overflow: isLongMessage && !isExpanded ? 'hidden' : 'visible',
+                  position: 'relative'
+                }}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={MarkdownComponents}
+                  >
+                    {contentStr}
+                  </ReactMarkdown>
+                  
+                  {/* Gradient overlay quando colapsado */}
+                  {isLongMessage && !isExpanded && (
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '40px',
+                        background: `linear-gradient(transparent, ${colors.surface})`,
+                        pointerEvents: 'none'
+                      }}
+                    />
+                  )}
+                </div>
                 {/* Não mostrar typing indicator se há limite do Claude */}
                 {!claudeStatus.isLimitReached && (
                   <div className="flex items-center mt-3 pt-2 border-t" style={{ borderTopColor: colors.borderLight }}>
@@ -1706,7 +1773,11 @@ const ClaudeChat = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
+              placeholder={
+                !sessionId 
+                  ? "Digite sua primeira mensagem para iniciar..."
+                  : "Type your message... (Enter to send, Shift+Enter for new line)"
+              }
               className="flex-1 resize-none rounded-xl px-4 py-3 focus:outline-none transition-all duration-200"
               style={{ 
                 border: `2px solid ${colors.border}`,
@@ -1729,14 +1800,16 @@ const ClaudeChat = () => {
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim() || connected === false || loading}
-              className="px-6 py-3 rounded-xl transition-all duration-200 font-semibold focus:outline-none min-w-[80px]"
+              disabled={!input.trim() || connected === false || loading || creatingSession}
+              className="px-6 py-3 rounded-xl transition-all duration-200 font-semibold focus:outline-none min-w-[100px]"
               style={{ 
                 backgroundColor: !input.trim() || connected === false 
                   ? colors.disabled 
-                  : colors.success,
+                  : creatingSession
+                    ? colors.warning
+                    : colors.success,
                 color: colors.surface,
-                cursor: !input.trim() || connected === false ? 'not-allowed' : 'pointer',
+                cursor: !input.trim() || connected === false || creatingSession ? 'not-allowed' : 'pointer',
                 boxShadow: !input.trim() || connected === false 
                   ? 'none' 
                   : `0 2px 4px ${colors.overlayLight}`
@@ -1767,13 +1840,19 @@ const ClaudeChat = () => {
                 }
               }}
             >
-              {loading ? '...' : 'Send'}
+              {loading ? '...' : creatingSession ? 'Iniciando...' : 'Send'}
             </button>
           </div>
-          {sessionId && (
+          {(sessionId || creatingSession) && (
             <div className="text-xs mt-3 flex items-center space-x-2" style={{ color: colors.textTertiary }}>
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.statusSuccess }}></span>
-              <span>Session: <span className="font-mono">{sessionId.slice(0, 8)}...</span></span>
+              <span className="w-2 h-2 rounded-full" style={{ 
+                backgroundColor: creatingSession ? colors.warning : colors.statusSuccess 
+              }}></span>
+              <span>
+                {creatingSession 
+                  ? 'Criando sessão automaticamente...' 
+                  : `Session: ${sessionId.slice(0, 8)}...`}
+              </span>
             </div>
           )}
         </div>

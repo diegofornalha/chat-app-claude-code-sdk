@@ -51,12 +51,22 @@ export interface UISettings {
   enableConsoleLogs: boolean;
   showSessionInfo: boolean;
   showCostEstimates: boolean;
+  expandedByDefault: boolean;
   enableAIConcierge: boolean;
   enableStepByStep: boolean;
   enableQuickActions: boolean;
   enableCostTracking: boolean;
   processingViewMode: 'minimize' | 'compact' | 'full' | 'hidden';
   messageViewMode: 'minimal' | 'standard' | 'detailed' | 'developer';
+  
+  // Processing Steps Control
+  showSystemStep: boolean;
+  showInitializingStep: boolean;
+  showConnectingStep: boolean;
+  showThinkingStep: boolean;
+  showToolSteps: boolean;
+  showStreamingStep: boolean;
+  showFinalizingStep: boolean;
 }
 
 export interface ConnectionStats {

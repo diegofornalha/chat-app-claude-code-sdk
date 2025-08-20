@@ -16,130 +16,201 @@ class MCPClient extends EventEmitter {
     this.requestQueue = [];
     this.responseHandlers = new Map();
     this.requestId = 0;
+    this.connectionAttempts = 0;
+    this.lastConnectionError = null;
     
-    // Configurações
+    // Configurações com melhor retry logic
     this.config = {
       mcpServerPath: options.mcpServerPath || '/Users/2a/.claude/mcp-neo4j-agent-memory/build/index.js',
       neo4jUri: options.neo4jUri || process.env.NEO4J_URI || 'bolt://localhost:7687',
       neo4jUsername: options.neo4jUsername || process.env.NEO4J_USERNAME || 'neo4j',
       neo4jPassword: options.neo4jPassword || process.env.NEO4J_PASSWORD || 'password',
       transport: 'stdio', // Sempre usar stdio
-      debug: options.debug || false
+      debug: options.debug || false,
+      // Retry configuration
+      maxRetries: options.maxRetries || 3,
+      initialRetryDelay: options.initialRetryDelay || 1000, // 1 second
+      maxRetryDelay: options.maxRetryDelay || 30000, // 30 seconds
+      retryBackoffMultiplier: options.retryBackoffMultiplier || 2,
+      connectionTimeout: options.connectionTimeout || 10000 // 10 seconds per attempt
     };
     
     this.buffer = '';
+    this.reconnectTimer = null;
+    this.isReconnecting = false;
   }
 
   /**
-   * Conectar ao servidor MCP Neo4j
+   * Conectar ao servidor MCP Neo4j com retry logic
    */
   async connect() {
     if (this.connected) {
       console.log('⚠️ MCP Client já está conectado');
-      return;
+      return true;
     }
 
-    try {
-      console.log('🔌 Conectando MCP Client ao Neo4j...');
-      
-      // Verificar se o arquivo existe
-      const fs = require('fs');
-      if (!fs.existsSync(this.config.mcpServerPath)) {
-        throw new Error(`MCP server não encontrado em: ${this.config.mcpServerPath}`);
-      }
+    if (this.isReconnecting) {
+      console.log('⚠️ Reconexão já em andamento...');
+      return false;
+    }
 
-      // Iniciar processo MCP
-      this.mcpProcess = spawn('node', [this.config.mcpServerPath], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          NEO4J_URI: this.config.neo4jUri,
-          NEO4J_USERNAME: this.config.neo4jUsername,
-          NEO4J_PASSWORD: this.config.neo4jPassword,
-          MCP_TRANSPORT: 'stdio'
+    this.isReconnecting = true;
+    let lastError = null;
+
+    // Tentativas com backoff exponencial
+    for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
+      this.connectionAttempts = attempt + 1;
+      
+      try {
+        console.log(`🔌 [MCP] Tentativa ${attempt + 1}/${this.config.maxRetries + 1} de conectar ao Neo4j...`);
+        
+        // Verificar se o arquivo existe
+        const fs = require('fs');
+        if (!fs.existsSync(this.config.mcpServerPath)) {
+          throw new Error(`MCP server não encontrado em: ${this.config.mcpServerPath}`);
         }
-      });
 
-      // Configurar handlers de eventos
-      this.mcpProcess.stdout.on('data', this.handleStdout.bind(this));
-      this.mcpProcess.stderr.on('data', this.handleStderr.bind(this));
-      
-      this.mcpProcess.on('close', (code) => {
-        console.log(`MCP process exited with code ${code}`);
-        this.connected = false;
-        this.emit('disconnected', code);
-      });
+        // Limpar processo anterior se existir
+        if (this.mcpProcess) {
+          this.mcpProcess.kill();
+          this.mcpProcess = null;
+        }
 
-      this.mcpProcess.on('error', (error) => {
-        console.error('MCP process error:', error);
-        this.connected = false;
-        this.emit('error', error);
-      });
+        // Iniciar processo MCP
+        this.mcpProcess = spawn('node', [this.config.mcpServerPath], {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: {
+            ...process.env,
+            NEO4J_URI: this.config.neo4jUri,
+            NEO4J_USERNAME: this.config.neo4jUsername,
+            NEO4J_PASSWORD: this.config.neo4jPassword,
+            MCP_TRANSPORT: 'stdio'
+          }
+        });
 
-      // Aguardar inicialização
-      await this.waitForConnection();
-      
-      // Registrar esta instância
-      await this.registerChatApp();
-      
-      console.log('✅ MCP Client conectado com sucesso');
-      this.emit('connected');
-      
-    } catch (error) {
-      console.error('❌ Erro conectando MCP:', error);
-      this.connected = false;
-      throw error;
+        // Configurar handlers de eventos
+        this.mcpProcess.stdout.on('data', this.handleStdout.bind(this));
+        this.mcpProcess.stderr.on('data', this.handleStderr.bind(this));
+        
+        this.mcpProcess.on('close', (code) => {
+          console.log(`[MCP] Process exited with code ${code}`);
+          this.connected = false;
+          this.emit('disconnected', code);
+          
+          // Auto-reconnect se não foi intencional
+          if (code !== 0 && !this.isReconnecting) {
+            this.scheduleReconnect();
+          }
+        });
+
+        this.mcpProcess.on('error', (error) => {
+          console.error('[MCP] Process error:', error);
+          this.connected = false;
+          this.lastConnectionError = error;
+          this.emit('error', error);
+        });
+
+        // Aguardar inicialização com timeout
+        await this.waitForConnection();
+        
+        // Inicializar protocolo MCP
+        await this.initializeMCPProtocol();
+        
+        console.log('✅ [MCP] Client conectado com sucesso');
+        this.connected = true;
+        this.isReconnecting = false;
+        this.connectionAttempts = 0;
+        this.lastConnectionError = null;
+        this.emit('connected');
+        
+        return true;
+        
+      } catch (error) {
+        lastError = error;
+        this.lastConnectionError = error;
+        console.error(`❌ [MCP] Tentativa ${attempt + 1} falhou:`, error.message);
+        
+        // Se não é a última tentativa, aguardar com backoff
+        if (attempt < this.config.maxRetries) {
+          const delay = Math.min(
+            this.config.initialRetryDelay * Math.pow(this.config.retryBackoffMultiplier, attempt),
+            this.config.maxRetryDelay
+          );
+          console.log(`⏳ [MCP] Aguardando ${delay}ms antes da próxima tentativa...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
+
+    // Todas as tentativas falharam
+    this.isReconnecting = false;
+    this.connected = false;
+    console.error(`❌ [MCP] Falha ao conectar após ${this.config.maxRetries + 1} tentativas`);
+    this.emit('connection_failed', lastError);
+    
+    return false;
   }
 
   /**
-   * Aguardar conexão estar pronta com retry logic
+   * Aguardar conexão estar pronta com timeout otimizado
    */
-  async waitForConnection(retryCount = 0) {
-    const maxRetries = 3;
-    const timeoutMs = 30000; // Aumentado de 10s para 30s
-    
-    console.log(`🔄 Tentativa ${retryCount + 1}/${maxRetries} de conectar ao MCP...`);
+  async waitForConnection() {
+    const timeoutMs = this.config.connectionTimeout;
     
     return new Promise((resolve, reject) => {
+      let connectionEstablished = false;
+      let checkInterval;
+      
       const timeout = setTimeout(() => {
-        clearInterval(checkInterval);
-        
-        if (retryCount < maxRetries - 1) {
-          console.log(`⏱️  Timeout na tentativa ${retryCount + 1}, tentando novamente...`);
-          this.waitForConnection(retryCount + 1)
-            .then(resolve)
-            .catch(reject);
-        } else {
-          reject(new Error(`Timeout conectando ao MCP após ${maxRetries} tentativas`));
+        if (!connectionEstablished) {
+          clearInterval(checkInterval);
+          reject(new Error(`Timeout após ${timeoutMs}ms aguardando MCP inicializar`));
         }
       }, timeoutMs);
 
-      const checkInterval = setInterval(async () => {
+      // Verificar se o processo está vivo e pronto
+      checkInterval = setInterval(() => {
         try {
-          // Tentar uma operação simples para verificar conexão
-          const result = await this.sendRequest('initialize', {
-            clientInfo: {
-              name: 'chat-app-sdk',
-              version: '1.0.0'
-            }
-          });
-          
-          if (result) {
+          if (this.mcpProcess && !this.mcpProcess.killed && this.mcpProcess.pid) {
+            // Processo está rodando
+            connectionEstablished = true;
             clearInterval(checkInterval);
             clearTimeout(timeout);
-            this.connected = true;
-            console.log(`✅ MCP conectado na tentativa ${retryCount + 1}`);
+            console.log(`✅ [MCP] Processo inicializado (PID: ${this.mcpProcess.pid})`);
             resolve();
           }
         } catch (error) {
-          // Ainda não conectado
           if (this.config.debug) {
-            console.log(`⏳ Aguardando MCP ficar pronto... (tentativa ${retryCount + 1})`);
+            console.log(`⏳ [MCP] Aguardando inicialização...`);
           }
         }
-      }, 500);
+      }, 500); // Check a cada 500ms
     });
+  }
+
+  /**
+   * Agendar reconexão automática
+   */
+  scheduleReconnect() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
+
+    const delay = Math.min(
+      this.config.initialRetryDelay * Math.pow(this.config.retryBackoffMultiplier, this.connectionAttempts),
+      this.config.maxRetryDelay
+    );
+
+    console.log(`🔄 [MCP] Reconexão automática agendada em ${delay}ms...`);
+    
+    this.reconnectTimer = setTimeout(async () => {
+      console.log('🔄 [MCP] Tentando reconectar automaticamente...');
+      try {
+        await this.connect();
+      } catch (error) {
+        console.error('❌ [MCP] Falha na reconexão automática:', error.message);
+      }
+    }, delay);
   }
 
   /**
@@ -241,6 +312,51 @@ class MCPClient extends EventEmitter {
   }
 
   /**
+   * Inicializar protocolo MCP
+   */
+  async initializeMCPProtocol() {
+    try {
+      console.log('🔧 Inicializando protocolo MCP...');
+      
+      // Fase 1: Initialize
+      const initResult = await this.sendRequest('initialize', {
+        protocolVersion: '2024-11-05',
+        capabilities: {
+          roots: {
+            listChanged: true
+          },
+          sampling: {}
+        },
+        clientInfo: {
+          name: 'chat-app-claude-code-sdk',
+          version: '1.0.0'
+        }
+      });
+      
+      console.log('✅ MCP initialize result:', initResult);
+      
+      // Fase 2: Initialized notification (não esperar resposta)
+      try {
+        // Enviar notification sem esperar resposta
+        const notificationStr = JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'notifications/initialized',
+          params: {}
+        }) + '\n';
+        this.mcpProcess.stdin.write(notificationStr);
+        console.log('✅ MCP initialized notification sent');
+      } catch (notifError) {
+        console.log('⚠️ Notification error (ok to ignore):', notifError.message);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Erro inicializando protocolo MCP:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Registrar aplicação no Neo4j
    */
   async registerChatApp() {
@@ -270,15 +386,24 @@ class MCPClient extends EventEmitter {
    */
   async searchMemories(params = {}) {
     try {
-      const result = await this.sendRequest('tools/search_memories', {
-        query: params.query || '',
-        limit: params.limit || 10,
-        depth: params.depth || 1,
-        label: params.label,
-        since_date: params.since_date
+      const result = await this.sendRequest('tools/call', {
+        name: 'search_memories',
+        arguments: {
+          query: params.query || '',
+          limit: params.limit || 10,
+          depth: params.depth || 1,
+          label: params.label,
+          since_date: params.since_date
+        }
       });
       
-      return result?.memories || [];
+      // Extrair dados do formato MCP
+      const content = result?.content?.[0]?.text;
+      if (content) {
+        const parsed = JSON.parse(content);
+        return parsed?.memories || [];
+      }
+      return [];
     } catch (error) {
       console.error('Erro buscando memórias:', error);
       return [];
@@ -290,11 +415,19 @@ class MCPClient extends EventEmitter {
    */
   async createMemory(label, properties) {
     try {
-      const result = await this.sendRequest('tools/create_memory', {
-        label,
-        properties
+      const result = await this.sendRequest('tools/call', {
+        name: 'create_memory',
+        arguments: {
+          label,
+          properties
+        }
       });
       
+      // Extrair dados do formato MCP
+      const content = result?.content?.[0]?.text;
+      if (content) {
+        return JSON.parse(content);
+      }
       return result;
     } catch (error) {
       console.error('Erro criando memória:', error);
@@ -307,13 +440,21 @@ class MCPClient extends EventEmitter {
    */
   async createConnection(fromMemoryId, toMemoryId, type, properties = {}) {
     try {
-      const result = await this.sendRequest('tools/create_connection', {
-        fromMemoryId,
-        toMemoryId,
-        type,
-        properties
+      const result = await this.sendRequest('tools/call', {
+        name: 'create_connection',
+        arguments: {
+          fromMemoryId,
+          toMemoryId,
+          type,
+          properties
+        }
       });
       
+      // Extrair dados do formato MCP
+      const content = result?.content?.[0]?.text;
+      if (content) {
+        return JSON.parse(content);
+      }
       return result;
     } catch (error) {
       console.error('Erro criando conexão:', error);
@@ -326,11 +467,19 @@ class MCPClient extends EventEmitter {
    */
   async updateMemory(nodeId, properties) {
     try {
-      const result = await this.sendRequest('tools/update_memory', {
-        nodeId,
-        properties
+      const result = await this.sendRequest('tools/call', {
+        name: 'update_memory',
+        arguments: {
+          nodeId,
+          properties
+        }
       });
       
+      // Extrair dados do formato MCP
+      const content = result?.content?.[0]?.text;
+      if (content) {
+        return JSON.parse(content);
+      }
       return result;
     } catch (error) {
       console.error('Erro atualizando memória:', error);
@@ -343,10 +492,18 @@ class MCPClient extends EventEmitter {
    */
   async deleteMemory(nodeId) {
     try {
-      const result = await this.sendRequest('tools/delete_memory', {
-        nodeId
+      const result = await this.sendRequest('tools/call', {
+        name: 'delete_memory',
+        arguments: {
+          nodeId
+        }
       });
       
+      // Extrair dados do formato MCP
+      const content = result?.content?.[0]?.text;
+      if (content) {
+        return JSON.parse(content);
+      }
       return result;
     } catch (error) {
       console.error('Erro deletando memória:', error);
@@ -359,8 +516,18 @@ class MCPClient extends EventEmitter {
    */
   async listMemoryLabels() {
     try {
-      const result = await this.sendRequest('tools/list_memory_labels', {});
-      return result?.labels || [];
+      const result = await this.sendRequest('tools/call', {
+        name: 'list_memory_labels',
+        arguments: {}
+      });
+      
+      // Extrair dados do formato MCP
+      const content = result?.content?.[0]?.text;
+      if (content) {
+        const parsed = JSON.parse(content);
+        return parsed?.labels || [];
+      }
+      return [];
     } catch (error) {
       console.error('Erro listando labels:', error);
       return [];

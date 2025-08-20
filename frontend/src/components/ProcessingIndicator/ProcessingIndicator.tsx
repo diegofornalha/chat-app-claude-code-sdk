@@ -15,6 +15,15 @@ interface ProcessingIndicatorProps {
   autoExpand: boolean;
   animationsEnabled: boolean;
   viewMode?: 'minimize' | 'compact' | 'full' | 'hidden';
+  stepFilters?: {
+    showSystemStep: boolean;
+    showInitializingStep: boolean;
+    showConnectingStep: boolean;
+    showThinkingStep: boolean;
+    showToolSteps: boolean;
+    showStreamingStep: boolean;
+    showFinalizingStep: boolean;
+  };
 }
 
 export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
@@ -22,7 +31,8 @@ export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
   showDetails,
   autoExpand,
   animationsEnabled,
-  viewMode = 'minimize'
+  viewMode = 'minimize',
+  stepFilters
 }) => {
   const [expanded, setExpanded] = useState(false); // Iniciar colapsado
   const [minimized, setMinimized] = useState(viewMode === 'minimize'); // Baseado no viewMode
@@ -32,7 +42,39 @@ export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
     setMinimized(viewMode === 'minimize');
   }, [autoExpand, viewMode]);
 
-  if (!showDetails || steps.length === 0 || viewMode === 'hidden') {
+  // Função para filtrar steps baseado nas configurações
+  const shouldShowStep = (step: ProcessingStep): boolean => {
+    if (!stepFilters) return true; // Se não há filtros, mostrar tudo
+    
+    const stepType = step.step;
+    
+    switch (stepType) {
+      case 'system':
+        return stepFilters.showSystemStep;
+      case 'initializing':
+      case 'initialization':
+        return stepFilters.showInitializingStep;
+      case 'connecting':
+      case 'connection':
+        return stepFilters.showConnectingStep;
+      case 'thinking':
+        return stepFilters.showThinkingStep;
+      case 'tool_use':
+      case 'tool_result':
+        return stepFilters.showToolSteps;
+      case 'streaming':
+        return stepFilters.showStreamingStep;
+      case 'finalizing':
+        return stepFilters.showFinalizingStep;
+      default:
+        return true; // Mostrar steps não categorizados
+    }
+  };
+
+  // Filtrar steps baseado nas configurações
+  const filteredSteps = steps.filter(shouldShowStep);
+
+  if (!showDetails || filteredSteps.length === 0 || viewMode === 'hidden') {
     if (viewMode === 'hidden') return null;
     
     // Modo simples - apenas indicador de processamento
@@ -48,7 +90,7 @@ export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
     );
   }
 
-  const currentStep = steps[steps.length - 1];
+  const currentStep = filteredSteps[filteredSteps.length - 1];
   
   const getStepEmoji = (stepType: string) => {
     switch (stepType) {
@@ -166,19 +208,19 @@ export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
               <div 
                 className="processing-progress-fill"
                 style={{ 
-                  width: `${Math.min((steps.length / 5) * 100, 90)}%` 
+                  width: `${Math.min((filteredSteps.length / 5) * 100, 90)}%` 
                 }}
               />
             </div>
           </div>
 
           <div className="processing-steps">
-            {steps.slice(-3).map((step, index) => {
+            {filteredSteps.slice(-3).map((step, index) => {
               const dataItems = formatData(step.data);
               return (
                 <div 
                   key={index} 
-                  className={`processing-step ${index === steps.slice(-3).length - 1 ? 'active' : ''}`}
+                  className={`processing-step ${index === filteredSteps.slice(-3).length - 1 ? 'active' : ''}`}
                 >
                   <div className="processing-step-icon">
                     {getStepEmoji(step.step)}
