@@ -595,7 +595,7 @@ const ClaudeChat = () => {
     newSocket.on('connect', () => {
       if (uiSettings.enableConsoleLogs) console.log('🔗 Connected to server');
       setConnected(true);
-      checkHealth();
+      // checkHealth(); // Removido para não sobrescrever o estado de conexão
     });
     
     newSocket.on('disconnect', () => {
@@ -778,7 +778,7 @@ const ClaudeChat = () => {
     try {
       const response = await fetch(`${API_BASE}/health`);
       const data = await response.json();
-      // Não sobrescrever o estado de conexão WebSocket com claude_available
+      // O estado de conexão é controlado apenas pelo WebSocket
       // setConnected(data.claude_available);
       if (data.active_connections !== undefined) {
         setConnectionStats({
@@ -788,7 +788,7 @@ const ClaudeChat = () => {
       }
     } catch (error) {
       if (uiSettings.enableConsoleLogs) console.error('Health check failed:', error);
-      // Não alterar o estado de conexão em caso de erro do health check
+      // Não alterar o estado de conexão baseado no health check
       // setConnected(false);
     }
   }, [uiSettings.enableConsoleLogs]);
@@ -805,13 +805,16 @@ const ClaudeChat = () => {
       return;
     }
     
-    // Se não há sessão, será criada automaticamente pelo backend
-    const currentSessionId = sessionId || `temp-${Date.now()}`;
+    // Manter a mesma sessão durante toda a conversa
+    let currentSessionId = sessionId;
     
     if (!sessionId) {
+      // Criar ID de sessão único e persistente
+      currentSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setSessionId(currentSessionId); // IMPORTANTE: Salvar no estado para reusar
       setCreatingSession(true);
       if (uiSettings.enableConsoleLogs) {
-        console.log('📝 Creating new session automatically...');
+        console.log('📝 Creating persistent session:', currentSessionId);
       }
     }
 
@@ -832,6 +835,15 @@ const ClaudeChat = () => {
         useAgent: !!selectedAgent
       };
 
+      // Adicionar mensagem do usuário imediatamente à interface
+      const userMessage: Message = {
+        id: messageId,
+        type: 'user',
+        content: messageContent,
+        timestamp: Date.now()
+      };
+      addMessage(userMessage);
+      
       if (selectedAgent) {
         socket.emit('a2a:send_message', messageData);
       } else {

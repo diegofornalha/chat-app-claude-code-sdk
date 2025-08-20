@@ -22,6 +22,8 @@ const EnhancedAgentManager = require('./services/EnhancedAgentManager');
 const OrchestratorService = require('./services/OrchestratorService');
 const QualityController = require('./services/QualityController');
 const { config, validateConfig } = require('./config/ai-sdk.config');
+const SessionContextManager = require('./sessionContext');
+const SessionContextNeo4j = require('./sessionContextNeo4j');
 const WorkerPool = require('./integrations/WorkerPool');
 const HealthChecker = require('./services/health-checker');
 const FeedbackProcessor = require('./integrations/FeedbackProcessor');
@@ -97,6 +99,10 @@ const sessions = new Map();
 const activeConnections = new Map();
 // Sistema de deduplicação de mensagens
 const processedMessages = new Map();
+
+// Inicializar gerenciador de contexto de sessão será feito após mcpClient
+// const sessionContextFallback = new SessionContextManager();
+// const sessionContextManager = new SessionContextNeo4j(mcpClient, sessionContextFallback);
 const MESSAGE_TTL = 30000; // 30 seconds
 
 // Limpeza automática de mensagens antigas
@@ -153,6 +159,10 @@ const mcpClient = new MCPClient({
   debug: process.env.MCP_DEBUG === 'true'
 });
 const ragService = new Neo4jRAGService(mcpClient);
+
+// Inicializar gerenciador de contexto de sessão APÓS mcpClient
+const sessionContextFallback = new SessionContextManager();
+const sessionContextManager = new SessionContextNeo4j(mcpClient, sessionContextFallback);
 
 // FUNÇÃO AUXILIAR PARA PROCESSAMENTO A2A
 async function processA2AMessage(socket, message, sessionId, selectedAgent, messageId) {
@@ -1304,6 +1314,101 @@ app.post('/api/memory/import', async (req, res) => {
 
 // Memory Management Routes will be initialized after system startup
 
+// Endpoint para debug - visualizar contexto de uma sessão
+app.get('/api/debug/session/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  
+  try {
+    // Buscar informações da sessão
+    const sessionData = sessions.get(sessionId);
+    
+    // Buscar contexto do Neo4j
+    let neo4jContext = null;
+    let contextFormatted = null;
+    
+    if (mcpClient && mcpClient.connected) {
+      const messages = await mcpClient.searchMemories({
+        query: `sessionId:${sessionId}`,
+        label: 'message',
+        limit: 50,
+        order_by: 'timestamp ASC'
+      });
+      
+      neo4jContext = messages;
+      
+      // Simular o que seria enviado ao Claude
+      contextFormatted = await sessionContextManager.getFormattedContext(sessionId, "[PRÓXIMA MENSAGEM]");
+    }
+    
+    // Estatísticas do contexto
+    const stats = await sessionContextManager.getStats();
+    
+    res.json({
+      sessionId,
+      exists: !!sessionData,
+      messageCount: sessionData ? sessionData.messages.length : 0,
+      messages: sessionData ? sessionData.messages.slice(-20) : [],
+      neo4j: {
+        connected: mcpClient && mcpClient.connected,
+        messagesInGraph: neo4jContext ? neo4jContext.length : 0,
+        context: neo4jContext
+      },
+      contextPreview: contextFormatted,
+      stats,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint para visualizar todos os diálogos ativos
+app.get('/api/debug/dialogs', async (req, res) => {
+  try {
+    const dialogs = [];
+    
+    for (const [sessionId, sessionData] of sessions.entries()) {
+      const lastMessage = sessionData.messages[sessionData.messages.length - 1];
+      
+      dialogs.push({
+        sessionId,
+        title: sessionData.title || 'Untitled Session',
+        messageCount: sessionData.messages.length,
+        createdAt: sessionData.createdAt,
+        lastActivity: sessionData.lastActivity,
+        lastMessage: lastMessage ? {
+          type: lastMessage.type,
+          preview: lastMessage.content ? lastMessage.content.substring(0, 100) + '...' : '',
+          timestamp: lastMessage.timestamp
+        } : null
+      });
+    }
+    
+    // Buscar também do Neo4j se disponível
+    let neo4jSessions = [];
+    if (mcpClient && mcpClient.connected) {
+      const sessions = await mcpClient.searchMemories({
+        label: 'session',
+        limit: 100
+      });
+      neo4jSessions = sessions;
+    }
+    
+    res.json({
+      activeDialogs: dialogs.length,
+      dialogs,
+      neo4j: {
+        connected: mcpClient && mcpClient.connected,
+        totalSessions: neo4jSessions.length,
+        sessions: neo4jSessions
+      },
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Endpoint para obter informações do próximo reset do Claude
 app.get('/api/claude-reset-info', async (req, res) => {
   try {
@@ -1945,42 +2050,6 @@ io.on('connection', (socket) => {
         }
       }
       
-      // Check if user is asking about the project BEFORE adding to session
-      const projectQuestions = [
-        'do que se trata',
-        'sobre o projeto',
-        'sobre este projeto',
-        'what is this',
-        'o que é isso',
-        'o que é este projeto',
-        'qual é o projeto',
-        'me explique o projeto',
-        'explain the project',
-        'sobre o repositório',
-        'about this project',
-        'about the repository'
-      ];
-      
-      const isAskingAboutProject = projectQuestions.some(q => 
-        message.toLowerCase().includes(q.toLowerCase())
-      );
-      
-      // Check if user is asking about specific files
-      const fileQuestions = [
-        'mostre o código',
-        'show the code',
-        'listar arquivos',
-        'list files',
-        'quais arquivos',
-        'what files',
-        'estrutura do projeto',
-        'project structure'
-      ];
-      
-      const isAskingAboutFiles = fileQuestions.some(q => 
-        message.toLowerCase().includes(q.toLowerCase())
-      );
-      
       // Add user message to session
       const userMessage = {
         id: uuidv4(),
@@ -2001,217 +2070,6 @@ io.on('connection', (socket) => {
         sessionId: currentSessionId
       });
       
-      if (isAskingAboutProject) {
-        // Emit minimal processing indicators
-        socket.emit('typing_start');
-        socket.emit('processing_step', {
-          sessionId: currentSessionId,
-          step: 'system',
-          message: 'Processing: system',
-          timestamp: Date.now()
-        });
-        
-        // Use CodeAnalyzer to get dynamic project context
-        const codeAnalyzer = require('./services/CodeAnalyzer');
-        
-        try {
-          // Get dynamic project context
-          const projectContext = await codeAnalyzer.generateProjectContext();
-          const projectStructure = await codeAnalyzer.analyzeProjectStructure();
-          
-          const projectInfo = `# Sobre este Projeto
-
-Este é o **Claude Code Chat** - uma aplicação avançada de chat multi-agente que integra o Claude AI SDK com várias capacidades:
-
-## 🌟 Principais Recursos:
-
-### Interface Moderna
-- Chat em tempo real com Claude AI
-- Interface configurável com logs técnicos opcionais
-- Suporte a dark mode e animações suaves
-- Histórico de conversas persistente
-
-### Sistema Multi-Agente
-- **Claude AI**: Assistente principal para código e análise
-- **Crew AI**: Orquestração de agentes especializados
-- **Context Engine**: Processamento com memória e contexto
-- **A2A Router**: Comunicação inteligente entre agentes
-
-### Capacidades Técnicas
-- Integração com AI SDK Provider v5
-- Memória persistente com Neo4j
-- Processamento em streaming
-- Upload e análise de arquivos
-- Exportação de conversas
-
-## 🎯 Como Usar:
-1. Digite sua mensagem no campo de texto
-2. Escolha um agente específico ou use a seleção automática
-3. Configure a interface em "UI Config" conforme sua preferência
-4. Use "Settings" para ajustar parâmetros do sistema
-
-## 🔧 Configurações Disponíveis:
-- **UI Config**: Controle visualização de logs, animações e métricas
-- **Settings**: Ajuste system prompt, max turns e streaming
-- **Sessions**: Acesse histórico de conversas anteriores
-
-${projectContext}
-
-## 📡 Status:
-- Conexão: ${socket.connected ? '✅ Conectado' : '❌ Desconectado'}
-- Agentes disponíveis: Claude, Crew-AI, Context Engine
-- Memória: ${contextEngine ? 'Ativa' : 'Inativa'}
-- Total de arquivos: ${projectStructure.total.files}
-- Tamanho total: ${(projectStructure.total.size / 1024 / 1024).toFixed(2)} MB
-
-Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar projetos ou qualquer outra tarefa de desenvolvimento!`;
-          
-          const infoMessage = {
-            id: uuidv4(),
-            type: 'assistant',
-            content: projectInfo,
-            timestamp: Date.now()
-          };
-          
-          sessionData.messages.push(infoMessage);
-          sessions.set(currentSessionId, sessionData);
-          
-          socket.emit('typing_end');
-          socket.emit('message_complete', {
-            ...infoMessage,
-            sessionId: currentSessionId
-          });
-          
-        } catch (error) {
-          console.error('Error generating project info:', error);
-          // Fallback to static info
-          const projectInfo = `# Sobre este Projeto
-
-Este é o **Claude Code Chat** - uma aplicação avançada de chat multi-agente.
-
-## 📡 Status:
-- Conexão: ${socket.connected ? '✅ Conectado' : '❌ Desconectado'}
-- Agentes disponíveis: Claude, Crew-AI, Context Engine
-- Memória: ${contextEngine ? 'Ativa' : 'Inativa'}
-
-Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar projetos ou qualquer outra tarefa de desenvolvimento!`;
-          
-          const infoMessage = {
-            id: uuidv4(),
-            type: 'assistant',
-            content: projectInfo,
-            timestamp: Date.now()
-          };
-          
-          sessionData.messages.push(infoMessage);
-          sessions.set(currentSessionId, sessionData);
-          
-          socket.emit('typing_end');
-          socket.emit('message_complete', {
-            ...infoMessage,
-            sessionId: currentSessionId
-          });
-        }
-        
-        return; // Don't process further
-      }
-      
-      // Handle file listing requests
-      if (isAskingAboutFiles) {
-        socket.emit('typing_start');
-        socket.emit('processing_step', {
-          sessionId: currentSessionId,
-          step: 'system',
-          message: 'Analisando estrutura do projeto...',
-          timestamp: Date.now()
-        });
-        
-        const codeAnalyzer = require('./services/CodeAnalyzer');
-        
-        try {
-          const files = await codeAnalyzer.listProjectFiles();
-          const structure = await codeAnalyzer.analyzeProjectStructure();
-          
-          // Organizar arquivos por categoria
-          const filesByCategory = {
-            frontend: files.filter(f => f.path.startsWith('frontend/')),
-            backend: files.filter(f => f.path.startsWith('backend/')),
-            config: files.filter(f => f.name.includes('config') || f.name.includes('.json')),
-            docs: files.filter(f => f.extension === '.md')
-          };
-          
-          let fileInfo = `# Estrutura do Projeto
-
-`;
-          fileInfo += `## 📈 Estatísticas Gerais
-`;
-          fileInfo += `- Total de arquivos: ${files.length}\n`;
-          fileInfo += `- Tamanho total: ${(structure.total.size / 1024 / 1024).toFixed(2)} MB\n`;
-          fileInfo += `- Frontend: ${structure.frontend.framework} (${filesByCategory.frontend.length} arquivos)\n`;
-          fileInfo += `- Backend: ${structure.backend.framework} (${filesByCategory.backend.length} arquivos)\n\n`;
-          
-          fileInfo += `## 📁 Principais Arquivos\n\n`;
-          fileInfo += `### Frontend\n`;
-          filesByCategory.frontend.slice(0, 10).forEach(f => {
-            fileInfo += `- \`${f.path}\` (${(f.size / 1024).toFixed(1)} KB)\n`;
-          });
-          
-          fileInfo += `\n### Backend\n`;
-          filesByCategory.backend.slice(0, 10).forEach(f => {
-            fileInfo += `- \`${f.path}\` (${(f.size / 1024).toFixed(1)} KB)\n`;
-          });
-          
-          fileInfo += `\n### Configurações\n`;
-          filesByCategory.config.slice(0, 5).forEach(f => {
-            fileInfo += `- \`${f.path}\` (${(f.size / 1024).toFixed(1)} KB)\n`;
-          });
-          
-          fileInfo += `\n### Documentação\n`;
-          filesByCategory.docs.forEach(f => {
-            fileInfo += `- \`${f.path}\` (${(f.size / 1024).toFixed(1)} KB)\n`;
-          });
-          
-          fileInfo += `\n\n> Para ver o conteúdo de um arquivo específico, peça: "mostre o arquivo [caminho]"`;
-          
-          const filesMessage = {
-            id: uuidv4(),
-            type: 'assistant',
-            content: fileInfo,
-            timestamp: Date.now()
-          };
-          
-          sessionData.messages.push(filesMessage);
-          sessions.set(currentSessionId, sessionData);
-          
-          socket.emit('typing_end');
-          socket.emit('message_complete', {
-            ...filesMessage,
-            sessionId: currentSessionId
-          });
-          
-        } catch (error) {
-          console.error('Error listing files:', error);
-          const errorMessage = {
-            id: uuidv4(),
-            type: 'assistant',
-            content: 'Desculpe, não consegui listar os arquivos do projeto. Tente novamente mais tarde.',
-            timestamp: Date.now(),
-            is_error: true
-          };
-          
-          sessionData.messages.push(errorMessage);
-          sessions.set(currentSessionId, sessionData);
-          
-          socket.emit('typing_end');
-          socket.emit('message_complete', {
-            ...errorMessage,
-            sessionId: currentSessionId
-          });
-        }
-        
-        return; // Don't process further
-      }
-      
       // Log emitting user message (already emitted above)
       console.log('📤 [TRACE] User message emitted:', {
         messageId: userMessage.id,
@@ -2230,12 +2088,24 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
       console.log('🔍 [DEBUG] enrichedMessage:', enrichedMessage);
       console.log('🔍 [DEBUG] message:', message);
       
-      let finalPrompt = typeof enrichedMessage === 'string' ? enrichedMessage : enrichedMessage.content || message;
+      // Adicionar mensagem do usuário ao contexto da sessão
+      await sessionContextManager.addToContext(currentSessionId, 'user', message);
+      
+      // Obter mensagem com contexto da conversa
+      let finalPrompt = await sessionContextManager.getFormattedContext(currentSessionId, message);
+      
+      // Se tem enriquecimento do memory middleware, adicionar
+      if (enrichedMessage && enrichedMessage !== message) {
+        const enrichmentStr = typeof enrichedMessage === 'string' ? enrichedMessage : enrichedMessage.content || '';
+        if (enrichmentStr && enrichmentStr !== message) {
+          finalPrompt += `\n\nInformações adicionais do sistema: ${enrichmentStr}`;
+        }
+      }
       
       console.log('🔍 [DEBUG] finalPrompt before systemPrompt:', finalPrompt);
       
       if (systemPrompt) {
-        finalPrompt = `${systemPrompt}\n\nUser: ${finalPrompt}`;
+        finalPrompt = `${systemPrompt}\n\n${finalPrompt}`;
       }
       
       console.log('🔍 [DEBUG] finalPrompt after systemPrompt:', finalPrompt);
@@ -2562,6 +2432,9 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
           timestamp: Date.now(),
           ...responseMetadata
         };
+        
+        // Adicionar resposta do assistente ao contexto da sessão
+        await sessionContextManager.addToContext(currentSessionId, 'assistant', assistantResponse);
         
         console.log('💾 [TRACE] Saving assistant message to session:', {
           messageId: assistantMessage.id,
