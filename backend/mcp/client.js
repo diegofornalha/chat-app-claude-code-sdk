@@ -93,13 +93,27 @@ class MCPClient extends EventEmitter {
   }
 
   /**
-   * Aguardar conexão estar pronta
+   * Aguardar conexão estar pronta com retry logic
    */
-  async waitForConnection() {
+  async waitForConnection(retryCount = 0) {
+    const maxRetries = 3;
+    const timeoutMs = 30000; // Aumentado de 10s para 30s
+    
+    console.log(`🔄 Tentativa ${retryCount + 1}/${maxRetries} de conectar ao MCP...`);
+    
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Timeout conectando ao MCP'));
-      }, 10000);
+        clearInterval(checkInterval);
+        
+        if (retryCount < maxRetries - 1) {
+          console.log(`⏱️  Timeout na tentativa ${retryCount + 1}, tentando novamente...`);
+          this.waitForConnection(retryCount + 1)
+            .then(resolve)
+            .catch(reject);
+        } else {
+          reject(new Error(`Timeout conectando ao MCP após ${maxRetries} tentativas`));
+        }
+      }, timeoutMs);
 
       const checkInterval = setInterval(async () => {
         try {
@@ -115,12 +129,13 @@ class MCPClient extends EventEmitter {
             clearInterval(checkInterval);
             clearTimeout(timeout);
             this.connected = true;
+            console.log(`✅ MCP conectado na tentativa ${retryCount + 1}`);
             resolve();
           }
         } catch (error) {
           // Ainda não conectado
           if (this.config.debug) {
-            console.log('Aguardando MCP ficar pronto...');
+            console.log(`⏳ Aguardando MCP ficar pronto... (tentativa ${retryCount + 1})`);
           }
         }
       }, 500);
@@ -388,6 +403,46 @@ class MCPClient extends EventEmitter {
         transport: this.config.transport
       }
     };
+  }
+
+  /**
+   * Testar conexão com Neo4j através do MCP
+   */
+  async testConnection() {
+    try {
+      console.log('🧪 Testando conexão MCP -> Neo4j...');
+      
+      // Tentar buscar labels como teste
+      const labels = await this.listMemoryLabels();
+      
+      // Tentar criar uma memória de teste
+      const testMemory = await this.createMemory('test_connection', {
+        name: 'MCP Connection Test',
+        timestamp: new Date().toISOString(),
+        test: true
+      });
+      
+      // Deletar memória de teste
+      if (testMemory?.memory?._id) {
+        await this.deleteMemory(testMemory.memory._id);
+      }
+      
+      console.log('✅ Conexão MCP -> Neo4j funcionando!');
+      return {
+        success: true,
+        connected: true,
+        labels: labels.length,
+        message: 'MCP conectado e Neo4j acessível'
+      };
+    } catch (error) {
+      console.error('❌ Falha no teste de conexão:', error.message);
+      return {
+        success: false,
+        connected: this.connected,
+        error: error.message,
+        message: 'Falha na conexão MCP -> Neo4j'
+      };
+    }
   }
 }
 

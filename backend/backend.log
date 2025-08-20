@@ -1,7 +1,7 @@
-
-> claude-chat-backend@1.0.0 start
-> node server.js
-
+🚀 Initializing Chat Server Systems...
+📊 Connecting to Neo4j via MCP...
+🔌 Conectando MCP Client ao Neo4j...
+🔄 Tentativa 1/3 de conectar ao MCP...
 🚀 Enhanced Claude Code SDK Server running on port 8080
 📋 Features enabled:
   • Real-time streaming chat
@@ -10,249 +10,72 @@
   • Conversation export
   • Advanced Claude Code SDK integration
   • WebSocket connections for real-time updates
-Client connected: urdupaa833eUrIWMAAAB
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client connected: hAJBgs-AQR9sb77KAAAD
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client disconnected: urdupaa833eUrIWMAAAB
-Client disconnected: hAJBgs-AQR9sb77KAAAD
-Client connected: rI0mCiLb9KBff23FAAAG
-Client connected: 9kfMUzcy2mtuE7ERAAAH
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-📥 [TRACE] Received send_message event: {
-  socketId: '9kfMUzcy2mtuE7ERAAAH',
-  dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
-  messageLength: 29,
-  sessionId: '',
-  timestamp: '2025-08-18T00:02:20.694Z'
-}
-✅ [TRACE] Message validation passed: {
-  messagePreview: 'do que se trata esse projeto?',
-  sessionId: '',
-  hasSystemPrompt: false
-}
-📤 [TRACE] Emitting user message: {
-  messageId: '4ef81cc2-722d-4e9d-8936-3a494171541c',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7',
-  contentLength: 29
-}
-⏳ [TRACE] Starting Claude query with options: {
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7',
-  queryOptions: { maxTurns: 5 },
-  finalPromptLength: 29
-}
-🤖 [TRACE] Starting Claude Code query iteration
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print do que se trata esse projeto?
-🔄 [TRACE] Claude Code message received: {
-  type: 'system',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [
-    'type',
-    'subtype',
-    'cwd',
-    'session_id',
-    'tools',
-    'mcp_servers',
-    'model',
-    'permissionMode',
-    'apiKeySource'
-  ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 80,
-  preview: '[{"type":"text","text":"Vou analisar o projeto para entender do que se trata."}]...',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 221,
-  preview: '[{"type":"tool_use","id":"toolu_015d4wKjkksbT2YKPZ2P82s7","name":"TodoWrite","input":{"todos":[{"id"...',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 120,
-  preview: '[{"type":"tool_use","id":"toolu_019B5mX6XHV7TNq9sY7RYfgm","name":"Glob","input":{"pattern":"**/*.{js...',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 181,
-  preview: '[{"type":"tool_use","id":"toolu_01SxfarvAGAWd7pppv6kRZ6N","name":"Read","input":{"file_path":"/Users...',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 153,
-  preview: '[{"type":"tool_use","id":"toolu_01M6woEuxTwvsQ531q7EB9zY","name":"LS","input":{"path":"/Users/2a/.cl...',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 189,
-  preview: '[{"type":"tool_use","id":"toolu_01V77mss9GWYvjJTEbfXBTsa","name":"Read","input":{"file_path":"/Users...',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'result',
-  hasResult: false,
-  isError: false,
-  resultLength: undefined,
-  messageKeys: [
-    'type',
-    'subtype',
-    'duration_ms',
-    'duration_api_ms',
-    'is_error',
-    'num_turns',
-    'session_id',
-    'total_cost_usd',
-    'usage'
-  ]
-}
-🏁 [TRACE] Claude query completed, processing final response
-⚠️ [TRACE] Non-string response detected, converting: object
-⚠️ [TRACE] Empty assistant response detected, using fallback
-💾 [TRACE] Saving assistant message to session: {
-  messageId: 'c96d6bec-32f4-44e2-938d-af86f5e6468d',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7',
-  contentLength: 90,
-  metadata: { cost: 0.6863407, duration: 20999, turns: 5, is_error: false }
-}
-📤 [TRACE] Emitting message_complete event: {
-  messageId: 'c96d6bec-32f4-44e2-938d-af86f5e6468d',
-  sessionId: '498edf0e-a924-4940-a880-0d216980adc7'
-}
-🗑️ Deleting session: 498edf0e-a924-4940-a880-0d216980adc7
-✅ Session deleted successfully: 498edf0e-a924-4940-a880-0d216980adc7
-Client disconnected: rI0mCiLb9KBff23FAAAG
-Client disconnected: 9kfMUzcy2mtuE7ERAAAH
-Client connected: OXYJ8bS9DqtD_-C-AAAJ
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client connected: yULnWZVQ2EdzL8mZAAAL
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client disconnected: OXYJ8bS9DqtD_-C-AAAJ
-Client disconnected: yULnWZVQ2EdzL8mZAAAL
-Client connected: jB1U5_KLY2-8g-FFAAAO
-Client connected: x42eJhMZ_j80ZgvlAAAP
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client disconnected: jB1U5_KLY2-8g-FFAAAO
-Client disconnected: x42eJhMZ_j80ZgvlAAAP
-Client connected: sSlY8VV4mQLolcnJAAAR
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-(node:22497) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
-(Use `node --trace-warnings ...` to show where the warning was created)
-Client connected: 0GJ_zl2XloMUaQD6AAAT
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-📥 [TRACE] Received send_message event: {
-  socketId: 'sSlY8VV4mQLolcnJAAAR',
+  • Enhanced Agent Manager with Orchestrator-Worker pattern
+  • Quality Control and Feedback Loops
+  • Real-time metrics and monitoring
+Client connected: PzpgbZFVpXN9QtwcAAAB
+🔍 [HEALTH] Testing Claude Code SDK...
+🔍 [HEALTH] query function type: function
+🔍 [HEALTH] query function: [AsyncGeneratorFunction: query]
+🔍 [HEALTH] Test prompt: Say 'Hello' in one word
+🔍 [HEALTH] Test options: { maxTurns: 1 }
+❌ [HEALTH] Query error: Error: Claude Code process exited with code 1
+    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)
+    at ChildProcess.emit (node:events:508:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+⏱️  Timeout na tentativa 1, tentando novamente...
+🔄 Tentativa 2/3 de conectar ao MCP...
+Client disconnected: PzpgbZFVpXN9QtwcAAAB
+Client connected: TdXODDAQiVK67ZwDAAAD
+🔍 [HEALTH] Testing Claude Code SDK...
+🔍 [HEALTH] query function type: function
+🔍 [HEALTH] query function: [AsyncGeneratorFunction: query]
+🔍 [HEALTH] Test prompt: Say 'Hello' in one word
+🔍 [HEALTH] Test options: { maxTurns: 1 }
+❌ [HEALTH] Query error: Error: Claude Code process exited with code 1
+    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)
+    at ChildProcess.emit (node:events:508:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:457:11)
+    at Socket.emit (node:events:508:28)
+    at Pipe.<anonymous> (node:net:346:12)
+📥 [TRACE] Processing unique message: {
+  messageId: 'TdXODDAQiVK67ZwDAAAD-1755640775509-1urgt373p',
+  socketId: 'TdXODDAQiVK67ZwDAAAD',
   dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
   messageLength: 2,
-  sessionId: '',
-  timestamp: '2025-08-18T00:19:20.564Z'
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  timestamp: '2025-08-19T21:59:35.509Z'
 }
-✅ [TRACE] Message validation passed: { messagePreview: 'oi', sessionId: '', hasSystemPrompt: false }
-📤 [TRACE] Emitting user message: {
-  messageId: '52ecc049-bf37-4aa6-b232-518bc1068317',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
+✅ [TRACE] Message validation passed: {
+  messagePreview: 'oi',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  hasSystemPrompt: false
+}
+🚦 [ROUTING] Message routing decision: {
+  shouldUseContextEngine: false,
+  shouldUseA2A: false,
+  agentType: 'claude',
+  useAgent: false,
+  selectedAgent: null
+}
+📤 [TRACE] User message emitted: {
+  messageId: 'acc2f03e-fbe7-468c-bde3-30184423312d',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   contentLength: 2
 }
+🔍 [DEBUG] enrichedMessage: { content: 'oi', role: 'user' }
+🔍 [DEBUG] message: oi
+🔍 [DEBUG] finalPrompt before systemPrompt: oi
+🔍 [DEBUG] finalPrompt after systemPrompt: oi
+🔍 [DEBUG] finalPrompt type: string
 ⏳ [TRACE] Starting Claude query with options: {
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   queryOptions: { maxTurns: 5 },
   finalPromptLength: 2
 }
 🤖 [TRACE] Starting Claude Code query iteration
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print oi
 🔄 [TRACE] Claude Code message received: {
   type: 'system',
   hasResult: false,
@@ -279,16 +102,16 @@ Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-ap
 }
 📝 [TRACE] Got assistant message: {
   messageType: 'object',
-  messageLength: 59,
-  preview: '[{"type":"text","text":"Oi! Como posso ajudar você hoje?"}]...',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85'
+  messageLength: 67,
+  preview: '[{"type":"text","text":"Claude AI usage limit reached|1755644400"}]...',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
 📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
 🔄 [TRACE] Claude Code message received: {
   type: 'result',
   hasResult: true,
-  isError: false,
-  resultLength: 32,
+  isError: true,
+  resultLength: 40,
   messageKeys: [
     'type',
     'subtype',
@@ -302,433 +125,56 @@ Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-ap
     'usage'
   ]
 }
-✅ [TRACE] Got successful Claude response: {
-  responseLength: 32,
-  preview: 'Oi! Como posso ajudar você hoje?...',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
-  metadata: {
-    cost: 0.10226550000000001,
-    duration: 2410,
-    turns: 1,
-    is_error: false
-  }
+❌ [TRACE] Claude returned error: {
+  error: undefined,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  metadata: { cost: 0, duration: 1030, turns: 1, is_error: true }
 }
-📤 [TRACE] Emitting message_stream event: {
-  resultType: 'string',
-  resultLength: 32,
-  resultPreview: 'Oi! Como posso ajudar você hoje?'
+❌ [TRACE] Claude query error: {
+  error: 'Claude Code process exited with code 1',
+  stack: 'Error: Claude Code process exited with code 1\n' +
+    '    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)\n' +
+    '    at ChildProcess.emit (node:events:508:28)\n' +
+    '    at maybeClose (node:internal/child_process:1101:16)\n' +
+    '    at ChildProcess._handle.onexit (node:internal/child_process:305:5)',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
-🏁 [TRACE] Claude query completed, processing final response
-💾 [TRACE] Saving assistant message to session: {
-  messageId: 'd5759b34-c9fa-471c-a27f-d43e9001f17b',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
-  contentLength: 32,
-  metadata: {
-    cost: 0.10226550000000001,
-    duration: 2410,
-    turns: 1,
-    is_error: false
-  }
-}
-📤 [TRACE] Emitting message_complete event: {
-  messageId: 'd5759b34-c9fa-471c-a27f-d43e9001f17b',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85'
-}
-📥 [TRACE] Received send_message event: {
-  socketId: 'sSlY8VV4mQLolcnJAAAR',
-  dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
-  messageLength: 22,
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
-  timestamp: '2025-08-18T00:19:43.112Z'
-}
-✅ [TRACE] Message validation passed: {
-  messagePreview: 'conhece a2a protocolo?',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
-  hasSystemPrompt: false
-}
-📤 [TRACE] Emitting user message: {
-  messageId: '8671ee1d-a1a3-4d4d-b3a7-d4776d804188',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
-  contentLength: 22
-}
-⏳ [TRACE] Starting Claude query with options: {
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
-  queryOptions: { maxTurns: 5 },
-  finalPromptLength: 22
-}
-🤖 [TRACE] Starting Claude Code query iteration
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print conhece a2a protocolo?
-🔄 [TRACE] Claude Code message received: {
-  type: 'system',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [
-    'type',
-    'subtype',
-    'cwd',
-    'session_id',
-    'tools',
-    'mcp_servers',
-    'model',
-    'permissionMode',
-    'apiKeySource'
-  ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 394,
-  preview: '[{"type":"text","text":"Não encontrei informações específicas sobre \\"a2a protocolo\\" no codebase at...',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'result',
-  hasResult: true,
-  isError: false,
-  resultLength: 358,
-  messageKeys: [
-    'type',
-    'subtype',
-    'is_error',
-    'duration_ms',
-    'duration_api_ms',
-    'num_turns',
-    'result',
-    'session_id',
-    'total_cost_usd',
-    'usage'
-  ]
-}
-✅ [TRACE] Got successful Claude response: {
-  responseLength: 358,
-  preview: 'Não encontrei informações específicas sobre "a2a protocolo" no codebase atual. Você poderia fornecer...',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
-  metadata: { cost: 1.0592545, duration: 8775, turns: 1, is_error: false }
-}
-📤 [TRACE] Emitting message_stream event: {
-  resultType: 'string',
-  resultLength: 358,
-  resultPreview: 'Não encontrei informações específicas sobre "a2a protocolo" no codebase atual. Você poderia fornecer'
-}
-🏁 [TRACE] Claude query completed, processing final response
-💾 [TRACE] Saving assistant message to session: {
-  messageId: 'b0d236a9-73aa-4d02-b251-4e6c0af01422',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85',
-  contentLength: 358,
-  metadata: { cost: 1.0592545, duration: 8775, turns: 1, is_error: false }
-}
-📤 [TRACE] Emitting message_complete event: {
-  messageId: 'b0d236a9-73aa-4d02-b251-4e6c0af01422',
-  sessionId: '4d621db6-331b-4a05-8272-fca1e2f0cf85'
-}
-Client disconnected: sSlY8VV4mQLolcnJAAAR
-Client disconnected: 0GJ_zl2XloMUaQD6AAAT
-Client connected: Q_im7m5tmu8UAtOHAAAV
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client connected: pURb3EVqCqGL3fkYAAAX
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client connected: trtjnVn_xl8ADB42AAAZ
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Client disconnected: trtjnVn_xl8ADB42AAAZ
-Client disconnected: pURb3EVqCqGL3fkYAAAX
-Client disconnected: Q_im7m5tmu8UAtOHAAAV
-Client connected: ISusTrx5J0_veXSUAAAc
-Client connected: 6h6kwKATXULGoVk6AAAd
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Client disconnected: ISusTrx5J0_veXSUAAAc
-Client disconnected: 6h6kwKATXULGoVk6AAAd
-Client connected: 3RaOOUbKP_F0szXoAAAg
-Client connected: wTnTVRAxfjHMVR9NAAAh
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Client disconnected: 3RaOOUbKP_F0szXoAAAg
-Client disconnected: wTnTVRAxfjHMVR9NAAAh
-Client connected: clUiZSJVzjvz-gsKAAAk
-Client connected: PzpXIjaIJpILWrKDAAAl
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Client disconnected: PzpXIjaIJpILWrKDAAAl
-Client disconnected: clUiZSJVzjvz-gsKAAAk
-Client connected: rI9_Vf4XPG6J6SLUAAAo
-Client connected: ovBEPLPZjvGqBV11AAAp
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Client disconnected: rI9_Vf4XPG6J6SLUAAAo
-Client disconnected: ovBEPLPZjvGqBV11AAAp
-Client connected: M7Wd4r-fWhbxP0oqAAAs
-Client connected: 3C-b53Ke-eZkhMy0AAAt
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Client disconnected: 3C-b53Ke-eZkhMy0AAAt
-Client disconnected: M7Wd4r-fWhbxP0oqAAAs
-Client connected: fmuzFUKUwq0aRDKjAAAw
-Client connected: uhrSUyhbHVg18Gs4AAAx
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Client disconnected: uhrSUyhbHVg18Gs4AAAx
-Client disconnected: fmuzFUKUwq0aRDKjAAAw
-Client connected: PtizH__7LShPVXJbAAA0
-Client connected: nO9weIKfTrfN1hBxAAA1
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-📥 [TRACE] Received send_message event: {
-  socketId: 'nO9weIKfTrfN1hBxAAA1',
+📥 [TRACE] Processing unique message: {
+  messageId: 'TdXODDAQiVK67ZwDAAAD-1755640777198-8bnavuycv',
+  socketId: 'TdXODDAQiVK67ZwDAAAD',
   dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
   messageLength: 2,
-  sessionId: '',
-  timestamp: '2025-08-18T00:51:40.531Z'
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  timestamp: '2025-08-19T21:59:37.198Z'
 }
-✅ [TRACE] Message validation passed: { messagePreview: 'oi', sessionId: '', hasSystemPrompt: false }
-📤 [TRACE] Emitting user message: {
-  messageId: '35e2ee6c-7b04-4596-b180-d94ed21e72e5',
-  sessionId: 'a8e35a12-b84e-4327-9285-92519ac36026',
+✅ [TRACE] Message validation passed: {
+  messagePreview: 'oi',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  hasSystemPrompt: false
+}
+🚦 [ROUTING] Message routing decision: {
+  shouldUseContextEngine: false,
+  shouldUseA2A: false,
+  agentType: 'claude',
+  useAgent: false,
+  selectedAgent: null
+}
+📤 [TRACE] User message emitted: {
+  messageId: '00dedb46-abd5-4896-a8fa-d02b25e2da46',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   contentLength: 2
 }
+🔍 [DEBUG] enrichedMessage: { content: 'oi', role: 'user' }
+🔍 [DEBUG] message: oi
+🔍 [DEBUG] finalPrompt before systemPrompt: oi
+🔍 [DEBUG] finalPrompt after systemPrompt: oi
+🔍 [DEBUG] finalPrompt type: string
 ⏳ [TRACE] Starting Claude query with options: {
-  sessionId: 'a8e35a12-b84e-4327-9285-92519ac36026',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   queryOptions: { maxTurns: 5 },
   finalPromptLength: 2
 }
 🤖 [TRACE] Starting Claude Code query iteration
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print oi
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
 🔄 [TRACE] Claude Code message received: {
   type: 'system',
   hasResult: false,
@@ -755,16 +201,16 @@ Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed:
 }
 📝 [TRACE] Got assistant message: {
   messageType: 'object',
-  messageLength: 59,
-  preview: '[{"type":"text","text":"Oi! Como posso ajudar você hoje?"}]...',
-  sessionId: 'a8e35a12-b84e-4327-9285-92519ac36026'
+  messageLength: 67,
+  preview: '[{"type":"text","text":"Claude AI usage limit reached|1755644400"}]...',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
 📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
 🔄 [TRACE] Claude Code message received: {
   type: 'result',
   hasResult: true,
-  isError: false,
-  resultLength: 32,
+  isError: true,
+  resultLength: 40,
   messageKeys: [
     'type',
     'subtype',
@@ -778,94 +224,56 @@ Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed:
     'usage'
   ]
 }
-✅ [TRACE] Got successful Claude response: {
-  responseLength: 32,
-  preview: 'Oi! Como posso ajudar você hoje?...',
-  sessionId: 'a8e35a12-b84e-4327-9285-92519ac36026',
-  metadata: { cost: 0.2063872, duration: 2829, turns: 1, is_error: false }
+❌ [TRACE] Claude returned error: {
+  error: undefined,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  metadata: { cost: 0, duration: 876, turns: 1, is_error: true }
 }
-📤 [TRACE] Emitting message_stream event: {
-  resultType: 'string',
-  resultLength: 32,
-  resultPreview: 'Oi! Como posso ajudar você hoje?'
+❌ [TRACE] Claude query error: {
+  error: 'Claude Code process exited with code 1',
+  stack: 'Error: Claude Code process exited with code 1\n' +
+    '    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)\n' +
+    '    at ChildProcess.emit (node:events:508:28)\n' +
+    '    at maybeClose (node:internal/child_process:1101:16)\n' +
+    '    at ChildProcess._handle.onexit (node:internal/child_process:305:5)',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
-🏁 [TRACE] Claude query completed, processing final response
-💾 [TRACE] Saving assistant message to session: {
-  messageId: 'acc83398-7930-4300-9ff0-8ac49bb08354',
-  sessionId: 'a8e35a12-b84e-4327-9285-92519ac36026',
-  contentLength: 32,
-  metadata: { cost: 0.2063872, duration: 2829, turns: 1, is_error: false }
-}
-📤 [TRACE] Emitting message_complete event: {
-  messageId: 'acc83398-7930-4300-9ff0-8ac49bb08354',
-  sessionId: 'a8e35a12-b84e-4327-9285-92519ac36026'
-}
-Client disconnected: nO9weIKfTrfN1hBxAAA1
-Client disconnected: PtizH__7LShPVXJbAAA0
-Client connected: Tdi4gt5-8gF0oJb0AAA4
-Client connected: X23TJzQNGGSq3CJLAAA5
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-📥 [TRACE] Received send_message event: {
-  socketId: 'X23TJzQNGGSq3CJLAAA5',
+📥 [TRACE] Processing unique message: {
+  messageId: 'TdXODDAQiVK67ZwDAAAD-1755640778687-inh7evgqw',
+  socketId: 'TdXODDAQiVK67ZwDAAAD',
   dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
-  messageLength: 21,
-  sessionId: '',
-  timestamp: '2025-08-18T00:52:55.924Z'
+  messageLength: 2,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  timestamp: '2025-08-19T21:59:38.687Z'
 }
 ✅ [TRACE] Message validation passed: {
-  messagePreview: 'o que é a2a protocol?',
-  sessionId: '',
+  messagePreview: 'oi',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   hasSystemPrompt: false
 }
-📤 [TRACE] Emitting user message: {
-  messageId: 'a8c1b8af-774e-4780-b0c2-e38cbbe521c7',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
-  contentLength: 21
+🚦 [ROUTING] Message routing decision: {
+  shouldUseContextEngine: false,
+  shouldUseA2A: false,
+  agentType: 'claude',
+  useAgent: false,
+  selectedAgent: null
 }
+📤 [TRACE] User message emitted: {
+  messageId: '08b7cd54-6c1d-407d-83d1-8b5773bb7dcb',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  contentLength: 2
+}
+🔍 [DEBUG] enrichedMessage: { content: 'oi', role: 'user' }
+🔍 [DEBUG] message: oi
+🔍 [DEBUG] finalPrompt before systemPrompt: oi
+🔍 [DEBUG] finalPrompt after systemPrompt: oi
+🔍 [DEBUG] finalPrompt type: string
 ⏳ [TRACE] Starting Claude query with options: {
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   queryOptions: { maxTurns: 5 },
-  finalPromptLength: 21
+  finalPromptLength: 2
 }
 🤖 [TRACE] Starting Claude Code query iteration
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print o que é a2a protocol?
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
 🔄 [TRACE] Claude Code message received: {
   type: 'system',
   hasResult: false,
@@ -892,72 +300,16 @@ Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed:
 }
 📝 [TRACE] Got assistant message: {
   messageType: 'object',
-  messageLength: 113,
-  preview: '[{"type":"text","text":"Vou pesquisar no diretório `a2a/` para entender o que é o protocolo a2a nest...',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 165,
-  preview: '[{"type":"tool_use","id":"toolu_01MauVf2xzbnwjM32pW5qsZx","name":"LS","input":{"path":"/Users/2a/.cl...',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 182,
-  preview: '[{"type":"tool_use","id":"toolu_01SVRFSzcWt3weB3ZEbErKj7","name":"Read","input":{"file_path":"/Users...',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 770,
-  preview: '[{"type":"text","text":"O **protocolo A2A** (Agent-to-Agent) neste projeto é uma implementação para ...',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef'
+  messageLength: 67,
+  preview: '[{"type":"text","text":"Claude AI usage limit reached|1755644400"}]...',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
 📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
 🔄 [TRACE] Claude Code message received: {
   type: 'result',
   hasResult: true,
-  isError: false,
-  resultLength: 732,
+  isError: true,
+  resultLength: 40,
   messageKeys: [
     'type',
     'subtype',
@@ -971,80 +323,56 @@ Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed:
     'usage'
   ]
 }
-✅ [TRACE] Got successful Claude response: {
-  responseLength: 732,
-  preview: 'O **protocolo A2A** (Agent-to-Agent) neste projeto é uma implementação para conectar e orquestrar mú...',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
-  metadata: { cost: 0.4899382, duration: 29521, turns: 6, is_error: false }
+❌ [TRACE] Claude returned error: {
+  error: undefined,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  metadata: { cost: 0, duration: 1094, turns: 1, is_error: true }
 }
-📤 [TRACE] Emitting message_stream event: {
-  resultType: 'string',
-  resultLength: 732,
-  resultPreview: 'O **protocolo A2A** (Agent-to-Agent) neste projeto é uma implementação para conectar e orquestrar mú'
+❌ [TRACE] Claude query error: {
+  error: 'Claude Code process exited with code 1',
+  stack: 'Error: Claude Code process exited with code 1\n' +
+    '    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)\n' +
+    '    at ChildProcess.emit (node:events:508:28)\n' +
+    '    at maybeClose (node:internal/child_process:1101:16)\n' +
+    '    at ChildProcess._handle.onexit (node:internal/child_process:305:5)',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
-🏁 [TRACE] Claude query completed, processing final response
-💾 [TRACE] Saving assistant message to session: {
-  messageId: '35e6dec7-f04e-4448-be73-4fa4a7d40319',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
-  contentLength: 732,
-  metadata: { cost: 0.4899382, duration: 29521, turns: 6, is_error: false }
-}
-📤 [TRACE] Emitting message_complete event: {
-  messageId: '35e6dec7-f04e-4448-be73-4fa4a7d40319',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef'
-}
-Client disconnected: Tdi4gt5-8gF0oJb0AAA4
-Client disconnected: X23TJzQNGGSq3CJLAAA5
-Client connected: 4lMgeKc8T9hN6SJeAAA7
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Client connected: HeoRm7K6qBybFO1tAAA9
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
-🗑️ Deleting session: a8e35a12-b84e-4327-9285-92519ac36026
-✅ Session deleted successfully: a8e35a12-b84e-4327-9285-92519ac36026
-🗑️ Deleting session: 4d621db6-331b-4a05-8272-fca1e2f0cf85
-✅ Session deleted successfully: 4d621db6-331b-4a05-8272-fca1e2f0cf85
-📥 [TRACE] Received send_message event: {
-  socketId: '4lMgeKc8T9hN6SJeAAA7',
+📥 [TRACE] Processing unique message: {
+  messageId: 'TdXODDAQiVK67ZwDAAAD-1755640780474-uq2gurthm',
+  socketId: 'TdXODDAQiVK67ZwDAAAD',
   dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
-  messageLength: 21,
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db',
-  timestamp: '2025-08-18T00:58:12.866Z'
+  messageLength: 2,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  timestamp: '2025-08-19T21:59:40.474Z'
 }
 ✅ [TRACE] Message validation passed: {
-  messagePreview: 'o que é a2a protocol?',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db',
+  messagePreview: 'oi',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   hasSystemPrompt: false
 }
-📤 [TRACE] Emitting user message: {
-  messageId: '97e0e529-968a-4626-8183-30c64d7defc2',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db',
-  contentLength: 21
+🚦 [ROUTING] Message routing decision: {
+  shouldUseContextEngine: false,
+  shouldUseA2A: false,
+  agentType: 'claude',
+  useAgent: false,
+  selectedAgent: null
 }
+📤 [TRACE] User message emitted: {
+  messageId: '5159da43-2172-4a74-8732-7beb82f8991f',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  contentLength: 2
+}
+🔍 [DEBUG] enrichedMessage: { content: 'oi', role: 'user' }
+🔍 [DEBUG] message: oi
+🔍 [DEBUG] finalPrompt before systemPrompt: oi
+🔍 [DEBUG] finalPrompt after systemPrompt: oi
+🔍 [DEBUG] finalPrompt type: string
 ⏳ [TRACE] Starting Claude query with options: {
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   queryOptions: { maxTurns: 5 },
-  finalPromptLength: 21
+  finalPromptLength: 2
 }
 🤖 [TRACE] Starting Claude Code query iteration
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print o que é a2a protocol?
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
 🔄 [TRACE] Claude Code message received: {
   type: 'system',
   hasResult: false,
@@ -1071,114 +399,16 @@ Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed:
 }
 📝 [TRACE] Got assistant message: {
   messageType: 'object',
-  messageLength: 99,
-  preview: '[{"type":"text","text":"Vou pesquisar sobre o protocolo a2a no seu projeto para entender melhor."}]...',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 104,
-  preview: '[{"type":"tool_use","id":"toolu_01Qcrw6ZWEmhZzLXfX7HuAJo","name":"Glob","input":{"pattern":"**/*a2a*...',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 165,
-  preview: '[{"type":"tool_use","id":"toolu_01MSgd2LnFFZHQ2Dqd4Ew9CY","name":"LS","input":{"path":"/Users/2a/.cl...',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 182,
-  preview: '[{"type":"tool_use","id":"toolu_01Tnwv77gJmeBqedNnix6Fz3","name":"Read","input":{"file_path":"/Users...',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 120,
-  preview: '[{"type":"tool_use","id":"toolu_01RyyoieSUfrWHDZrz97u8o8","name":"Grep","input":{"pattern":"a2a|A2A"...',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db'
-}
-📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
-🔄 [TRACE] Claude Code message received: {
-  type: 'user',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-🔄 [TRACE] Claude Code message received: {
-  type: 'assistant',
-  hasResult: false,
-  isError: undefined,
-  resultLength: undefined,
-  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
-}
-📝 [TRACE] Got assistant message: {
-  messageType: 'object',
-  messageLength: 651,
-  preview: '[{"type":"text","text":"O **protocolo A2A (Agent-to-Agent)** é um protocolo de comunicação entre age...',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db'
+  messageLength: 67,
+  preview: '[{"type":"text","text":"Claude AI usage limit reached|1755644400"}]...',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
 📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
 🔄 [TRACE] Claude Code message received: {
   type: 'result',
   hasResult: true,
-  isError: false,
-  resultLength: 617,
+  isError: true,
+  resultLength: 40,
   messageKeys: [
     'type',
     'subtype',
@@ -1192,70 +422,56 @@ Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed:
     'usage'
   ]
 }
-✅ [TRACE] Got successful Claude response: {
-  responseLength: 617,
-  preview: 'O **protocolo A2A (Agent-to-Agent)** é um protocolo de comunicação entre agentes autônomos. Baseado ...',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db',
-  metadata: {
-    cost: 0.6887871999999999,
-    duration: 35038,
-    turns: 10,
-    is_error: false
-  }
+❌ [TRACE] Claude returned error: {
+  error: undefined,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  metadata: { cost: 0, duration: 837, turns: 1, is_error: true }
 }
-📤 [TRACE] Emitting message_stream event: {
-  resultType: 'string',
-  resultLength: 617,
-  resultPreview: 'O **protocolo A2A (Agent-to-Agent)** é um protocolo de comunicação entre agentes autônomos. Baseado '
+❌ [TRACE] Claude query error: {
+  error: 'Claude Code process exited with code 1',
+  stack: 'Error: Claude Code process exited with code 1\n' +
+    '    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)\n' +
+    '    at ChildProcess.emit (node:events:508:28)\n' +
+    '    at maybeClose (node:internal/child_process:1101:16)\n' +
+    '    at ChildProcess._handle.onexit (node:internal/child_process:305:5)',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
-🏁 [TRACE] Claude query completed, processing final response
-💾 [TRACE] Saving assistant message to session: {
-  messageId: 'c4ee5cb0-d9d6-4dfc-85a9-ab0156142fcc',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db',
-  contentLength: 617,
-  metadata: {
-    cost: 0.6887871999999999,
-    duration: 35038,
-    turns: 10,
-    is_error: false
-  }
-}
-📤 [TRACE] Emitting message_complete event: {
-  messageId: 'c4ee5cb0-d9d6-4dfc-85a9-ab0156142fcc',
-  sessionId: '2c38dc36-91e7-4416-bcb1-232c209228db'
-}
-🗑️ Deleting session: 2c38dc36-91e7-4416-bcb1-232c209228db
-✅ Session deleted successfully: 2c38dc36-91e7-4416-bcb1-232c209228db
-📥 [TRACE] Received send_message event: {
-  socketId: '4lMgeKc8T9hN6SJeAAA7',
+📥 [TRACE] Processing unique message: {
+  messageId: 'TdXODDAQiVK67ZwDAAAD-1755640781990-earbx8pf9',
+  socketId: 'TdXODDAQiVK67ZwDAAAD',
   dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
-  messageLength: 30,
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
-  timestamp: '2025-08-18T01:00:42.334Z'
+  messageLength: 2,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  timestamp: '2025-08-19T21:59:41.990Z'
 }
 ✅ [TRACE] Message validation passed: {
-  messagePreview: 'vc tem acesso ao mcp do neo4j?',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
+  messagePreview: 'oi',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   hasSystemPrompt: false
 }
-📤 [TRACE] Emitting user message: {
-  messageId: '3f854e06-4b56-49d4-a206-0c025501a158',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
-  contentLength: 30
+🚦 [ROUTING] Message routing decision: {
+  shouldUseContextEngine: false,
+  shouldUseA2A: false,
+  agentType: 'claude',
+  useAgent: false,
+  selectedAgent: null
 }
+📤 [TRACE] User message emitted: {
+  messageId: 'aed7eb65-108e-4698-833e-715d6a821758',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  contentLength: 2
+}
+🔍 [DEBUG] enrichedMessage: { content: 'oi', role: 'user' }
+🔍 [DEBUG] message: oi
+🔍 [DEBUG] finalPrompt before systemPrompt: oi
+🔍 [DEBUG] finalPrompt after systemPrompt: oi
+🔍 [DEBUG] finalPrompt type: string
 ⏳ [TRACE] Starting Claude query with options: {
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
   queryOptions: { maxTurns: 5 },
-  finalPromptLength: 30
+  finalPromptLength: 2
 }
 🤖 [TRACE] Starting Claude Code query iteration
-Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 5 --print vc tem acesso ao mcp do neo4j?
-Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed: HTTP 404
-    at VO6 (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:12221)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async VK (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:9328)
-    at async nl1.send (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js:1327:20715)
-
 🔄 [TRACE] Claude Code message received: {
   type: 'system',
   hasResult: false,
@@ -1282,16 +498,16 @@ Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed:
 }
 📝 [TRACE] Got assistant message: {
   messageType: 'object',
-  messageLength: 514,
-  preview: '[{"type":"text","text":"Sim, tenho acesso ao MCP do Neo4j! Posso usar várias ferramentas para intera...',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef'
+  messageLength: 67,
+  preview: '[{"type":"text","text":"Claude AI usage limit reached|1755644400"}]...',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
 📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
 🔄 [TRACE] Claude Code message received: {
   type: 'result',
   hasResult: true,
-  isError: false,
-  resultLength: 478,
+  isError: true,
+  resultLength: 40,
   messageKeys: [
     'type',
     'subtype',
@@ -1305,25 +521,155 @@ Claude Code stderr: Could not refresh OAuth tokens: Error: Token refresh failed:
     'usage'
   ]
 }
-✅ [TRACE] Got successful Claude response: {
-  responseLength: 478,
-  preview: 'Sim, tenho acesso ao MCP do Neo4j! Posso usar várias ferramentas para interagir com seu banco de dad...',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
-  metadata: { cost: 0.110751, duration: 12734, turns: 1, is_error: false }
+❌ [TRACE] Claude returned error: {
+  error: undefined,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  metadata: { cost: 0, duration: 1217, turns: 1, is_error: true }
 }
-📤 [TRACE] Emitting message_stream event: {
-  resultType: 'string',
-  resultLength: 478,
-  resultPreview: 'Sim, tenho acesso ao MCP do Neo4j! Posso usar várias ferramentas para interagir com seu banco de dad'
+❌ [TRACE] Claude query error: {
+  error: 'Claude Code process exited with code 1',
+  stack: 'Error: Claude Code process exited with code 1\n' +
+    '    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)\n' +
+    '    at ChildProcess.emit (node:events:508:28)\n' +
+    '    at maybeClose (node:internal/child_process:1101:16)\n' +
+    '    at ChildProcess._handle.onexit (node:internal/child_process:305:5)',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
 }
-🏁 [TRACE] Claude query completed, processing final response
-💾 [TRACE] Saving assistant message to session: {
-  messageId: '4c8fc12b-2898-4dc8-a0c1-cd492b3b5123',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef',
-  contentLength: 478,
-  metadata: { cost: 0.110751, duration: 12734, turns: 1, is_error: false }
+📥 [TRACE] Processing unique message: {
+  messageId: 'TdXODDAQiVK67ZwDAAAD-1755640783849-oldj86ilk',
+  socketId: 'TdXODDAQiVK67ZwDAAAD',
+  dataKeys: [ 'message', 'sessionId', 'maxTurns', 'allowedTools' ],
+  messageLength: 2,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  timestamp: '2025-08-19T21:59:43.849Z'
 }
-📤 [TRACE] Emitting message_complete event: {
-  messageId: '4c8fc12b-2898-4dc8-a0c1-cd492b3b5123',
-  sessionId: '97922e8e-62f1-4ad9-9b06-7c6459ca5eef'
+✅ [TRACE] Message validation passed: {
+  messagePreview: 'oi',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  hasSystemPrompt: false
 }
+🚦 [ROUTING] Message routing decision: {
+  shouldUseContextEngine: false,
+  shouldUseA2A: false,
+  agentType: 'claude',
+  useAgent: false,
+  selectedAgent: null
+}
+📤 [TRACE] User message emitted: {
+  messageId: '7f9c1cd4-0edc-4752-af60-2f6f18c453e1',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  contentLength: 2
+}
+🔍 [DEBUG] enrichedMessage: { content: 'oi', role: 'user' }
+🔍 [DEBUG] message: oi
+🔍 [DEBUG] finalPrompt before systemPrompt: oi
+🔍 [DEBUG] finalPrompt after systemPrompt: oi
+🔍 [DEBUG] finalPrompt type: string
+⏳ [TRACE] Starting Claude query with options: {
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  queryOptions: { maxTurns: 5 },
+  finalPromptLength: 2
+}
+🤖 [TRACE] Starting Claude Code query iteration
+Client disconnected: TdXODDAQiVK67ZwDAAAD
+Client connected: WC5BMrZotCRCLfwdAAAF
+🔍 [HEALTH] Testing Claude Code SDK...
+🔍 [HEALTH] query function type: function
+🔍 [HEALTH] query function: [AsyncGeneratorFunction: query]
+🔍 [HEALTH] Test prompt: Say 'Hello' in one word
+🔍 [HEALTH] Test options: { maxTurns: 1 }
+🔄 [TRACE] Claude Code message received: {
+  type: 'system',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [
+    'type',
+    'subtype',
+    'cwd',
+    'session_id',
+    'tools',
+    'mcp_servers',
+    'model',
+    'permissionMode',
+    'apiKeySource'
+  ]
+}
+🔄 [TRACE] Claude Code message received: {
+  type: 'assistant',
+  hasResult: false,
+  isError: undefined,
+  resultLength: undefined,
+  messageKeys: [ 'type', 'message', 'parent_tool_use_id', 'session_id' ]
+}
+📝 [TRACE] Got assistant message: {
+  messageType: 'object',
+  messageLength: 67,
+  preview: '[{"type":"text","text":"Claude AI usage limit reached|1755644400"}]...',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
+}
+📤 [TRACE] Emitting assistant message_stream: { messageContentType: 'object', messageContentLength: 'N/A' }
+🔄 [TRACE] Claude Code message received: {
+  type: 'result',
+  hasResult: true,
+  isError: true,
+  resultLength: 40,
+  messageKeys: [
+    'type',
+    'subtype',
+    'is_error',
+    'duration_ms',
+    'duration_api_ms',
+    'num_turns',
+    'result',
+    'session_id',
+    'total_cost_usd',
+    'usage'
+  ]
+}
+❌ [TRACE] Claude returned error: {
+  error: undefined,
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988',
+  metadata: { cost: 0, duration: 1247, turns: 1, is_error: true }
+}
+❌ [TRACE] Claude query error: {
+  error: 'Claude Code process exited with code 1',
+  stack: 'Error: Claude Code process exited with code 1\n' +
+    '    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)\n' +
+    '    at ChildProcess.emit (node:events:508:28)\n' +
+    '    at maybeClose (node:internal/child_process:1101:16)\n' +
+    '    at ChildProcess._handle.onexit (node:internal/child_process:305:5)',
+  sessionId: '056d3f5e-b6e5-4ab0-abc8-e5c025c37988'
+}
+❌ [HEALTH] Query error: Error: Claude Code process exited with code 1
+    at ChildProcess.<anonymous> (file:///Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/sdk.mjs:111:18)
+    at ChildProcess.emit (node:events:508:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+⏱️  Timeout na tentativa 2, tentando novamente...
+🔄 Tentativa 3/3 de conectar ao MCP...
+❌ Erro conectando MCP: Error: Timeout conectando ao MCP após 3 tentativas
+    at Timeout._onTimeout (/Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/mcp/client.js:114:18)
+    at listOnTimeout (node:internal/timers:608:17)
+    at process.processTimers (node:internal/timers:543:7)
+⚠️ MCP Client failed (continuing without memory): Timeout conectando ao MCP após 3 tentativas
+🔌 Initializing Plugin Manager...
+👁 Hot-reload de plugins ativado
+✅ PluginManager inicializado com 0 plugins
+✅ Plugin Manager initialized with 0 plugins
+📦 Available plugins: example-plugin
+🧠 Initializing Memory Middleware...
+✅ Memory Middleware initialized - ALL messages will be saved to Neo4j
+🧠 Memory management routes registered at /api/memory/v2
+✅ Context Engine initialized with MemoryMiddleware integration
+🎯 Initializing AI SDK v5 agents...
+🔧 Setting up Enhanced Agent Manager ecosystem...
+🔧 WorkerPool initialized with 5 workers
+🧠 FeedbackProcessor initialized with learning capabilities
+⚠️ AI SDK v5 initialization failed: Cannot read properties of undefined (reading 'bind')
+
+📋 System Status:
+  MCP (Neo4j): ❌ Disconnected
+  A2A Agents: ❌ None
+  Context Engine: ✅ Active
+

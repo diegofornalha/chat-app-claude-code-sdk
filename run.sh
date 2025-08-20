@@ -37,7 +37,7 @@ check_dependencies "backend" "Backend"
 check_dependencies "frontend" "Frontend"
 
 # Inicia o Backend
-echo "🔧 Iniciando Backend na porta 3001..."
+echo "🔧 Iniciando Backend na porta 8080..."
 cd backend
 npm start &
 BACKEND_PID=$!
@@ -56,7 +56,7 @@ cd ..
 echo ""
 echo "✨ Chat App iniciado com sucesso!"
 echo "📍 Frontend: http://localhost:3000"
-echo "📍 Backend: http://localhost:3001"
+echo "📍 Backend: http://localhost:8080"
 echo ""
 echo "Pressione Ctrl+C para encerrar ambos os serviços"
 

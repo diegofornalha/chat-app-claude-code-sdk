@@ -1,0 +1,112 @@
+
+> frontend@0.1.0 start
+> craco start
+
+(node:48480) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:48480) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:48480) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+
+Compiled successfully!
+
+You can now view frontend in the browser.
+
+  Local:            http://localhost:3002
+  On Your Network:  http://192.168.1.35:3002
+
+Note that the development build is not optimized.
+To create a production build, use npm run build.
+
+webpack compiled successfully
+Files successfully emitted, waiting for typecheck results...
+Issues checking in progress...
+ERROR in src/backup-removal-queue-20250820_034658/App.tsx:6:27
+TS2307: Cannot find module './components/AgentSelector' or its corresponding type declarations.
+    4 | import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+    5 | import { io, Socket } from 'socket.io-client';
+  > 6 | import AgentSelector from './components/AgentSelector';
+      |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    7 | import { ProcessingIndicator } from './components/ProcessingIndicator/ProcessingIndicator';
+    8 | import { UISettings } from './components/UISettings/UISettings';
+    9 | import SystemMetrics from './components/SystemMetrics/SystemMetrics';
+
+ERROR in src/backup-removal-queue-20250820_034658/App.tsx:7:37
+TS2307: Cannot find module './components/ProcessingIndicator/ProcessingIndicator' or its corresponding type declarations.
+     5 | import { io, Socket } from 'socket.io-client';
+     6 | import AgentSelector from './components/AgentSelector';
+  >  7 | import { ProcessingIndicator } from './components/ProcessingIndicator/ProcessingIndicator';
+       |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     8 | import { UISettings } from './components/UISettings/UISettings';
+     9 | import SystemMetrics from './components/SystemMetrics/SystemMetrics';
+    10 | import MessageQueue from './components/MessageQueue/MessageQueue';
+
+ERROR in src/backup-removal-queue-20250820_034658/App.tsx:8:28
+TS2307: Cannot find module './components/UISettings/UISettings' or its corresponding type declarations.
+     6 | import AgentSelector from './components/AgentSelector';
+     7 | import { ProcessingIndicator } from './components/ProcessingIndicator/ProcessingIndicator';
+  >  8 | import { UISettings } from './components/UISettings/UISettings';
+       |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     9 | import SystemMetrics from './components/SystemMetrics/SystemMetrics';
+    10 | import MessageQueue from './components/MessageQueue/MessageQueue';
+    11 | import { useMessageQueue, QueuedMessage } from './hooks/useMessageQueue';
+
+ERROR in src/backup-removal-queue-20250820_034658/App.tsx:9:27
+TS2307: Cannot find module './components/SystemMetrics/SystemMetrics' or its corresponding type declarations.
+     7 | import { ProcessingIndicator } from './components/ProcessingIndicator/ProcessingIndicator';
+     8 | import { UISettings } from './components/UISettings/UISettings';
+  >  9 | import SystemMetrics from './components/SystemMetrics/SystemMetrics';
+       |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    10 | import MessageQueue from './components/MessageQueue/MessageQueue';
+    11 | import { useMessageQueue, QueuedMessage } from './hooks/useMessageQueue';
+    12 |
+
+ERROR in src/backup-removal-queue-20250820_034658/App.tsx:10:26
+TS2307: Cannot find module './components/MessageQueue/MessageQueue' or its corresponding type declarations.
+     8 | import { UISettings } from './components/UISettings/UISettings';
+     9 | import SystemMetrics from './components/SystemMetrics/SystemMetrics';
+  > 10 | import MessageQueue from './components/MessageQueue/MessageQueue';
+       |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    11 | import { useMessageQueue, QueuedMessage } from './hooks/useMessageQueue';
+    12 |
+    13 | // Anthropic-inspired color system
+
+ERROR in src/backup-removal-queue-20250820_034658/App.tsx:11:48
+TS2307: Cannot find module './hooks/useMessageQueue' or its corresponding type declarations.
+     9 | import SystemMetrics from './components/SystemMetrics/SystemMetrics';
+    10 | import MessageQueue from './components/MessageQueue/MessageQueue';
+  > 11 | import { useMessageQueue, QueuedMessage } from './hooks/useMessageQueue';
+       |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^
+    12 |
+    13 | // Anthropic-inspired color system
+    14 | const colors = {
+
+ERROR in src/backup-removal-queue-20250820_034658/App.tsx:1021:34
+TS7006: Parameter 'msg' implicitly has an 'any' type.
+    1019 |       
+    1020 |       // Cancelar todas as mensagens pendentes ou em processamento
+  > 1021 |       messageQueue.queue.forEach(msg => {
+         |                                  ^^^
+    1022 |         if (msg.status === 'pending' || msg.status === 'processing') {
+    1023 |           messageQueue.cancelMessage(msg.id);
+    1024 |         }
+
+ERROR in src/backup-removal-queue-20250820_034658/App.tsx:2120:30
+TS7006: Parameter 'newSettings' implicitly has an 'any' type.
+    2118 |         <UISettings
+    2119 |           settings={uiSettings}
+  > 2120 |           onSettingsChange={(newSettings) => {
+         |                              ^^^^^^^^^^^
+    2121 |             setUiSettings((prev: UISettings) => {
+    2122 |               const updated = { ...prev, ...newSettings };
+    2123 |               // Salvar imediatamente no localStorage
+
+ERROR in src/backup-removal-queue-20250820_034658/MessageQueue.tsx:2:31
+TS2307: Cannot find module '../../hooks/useMessageQueue' or its corresponding type declarations.
+    1 | import React, { useState, useEffect, useMemo } from 'react';
+  > 2 | import { QueuedMessage } from '../../hooks/useMessageQueue';
+      |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 | import './MessageQueue.css';
+    4 |
+    5 | interface MessageQueueProps {
+

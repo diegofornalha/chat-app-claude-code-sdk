@@ -3,8 +3,8 @@
  * Conecta e orquestra múltiplos agentes A2A
  */
 
-import { EventEmitter } from 'events';
-import WebSocket from 'ws';
+const { EventEmitter } = require('events');
+const WebSocket = require('ws');
 
 class A2AClient extends EventEmitter {
   constructor() {
@@ -29,12 +29,13 @@ class A2AClient extends EventEmitter {
     };
 
     try {
-      // Buscar agent card
-      const response = await fetch(config.url);
+      // Buscar agent card no endpoint padrão A2A
+      const cardUrl = `${config.url}/.well-known/agent.json`;
+      const response = await fetch(cardUrl);
       if (response.ok) {
         const card = await response.json();
         agentInfo.card = card;
-        agentInfo.capabilities = card.capabilities || [];
+        agentInfo.capabilities = card.capabilities || card.skills || [];
         agentInfo.status = 'connected';
       }
     } catch (error) {
@@ -215,6 +216,9 @@ class A2AClient extends EventEmitter {
     this.activeTasks.set(taskId, taskRecord);
 
     try {
+      // Garantir que task é uma string
+      const taskContent = typeof task === 'string' ? task : JSON.stringify(task);
+      
       // Enviar tarefa via API REST
       const response = await fetch(`${agent.url}/tasks`, {
         method: 'POST',
@@ -222,7 +226,7 @@ class A2AClient extends EventEmitter {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          task,
+          task: taskContent,
           context: options.context || {},
           streaming: options.streaming || false
         })
@@ -334,6 +338,9 @@ class A2AClient extends EventEmitter {
       return this.sendTask(message, { streaming: true });
     }
 
+    // Garantir que message é uma string
+    const messageContent = typeof message === 'string' ? message : JSON.stringify(message);
+    
     // Usar endpoint de chat específico
     const response = await fetch(`${agent.url}/claude/chat`, {
       method: 'POST',
@@ -341,7 +348,7 @@ class A2AClient extends EventEmitter {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        message,
+        message: messageContent,
         session_id: sessionId
       })
     });
@@ -453,4 +460,4 @@ class A2AClient extends EventEmitter {
   }
 }
 
-export default A2AClient;
+module.exports = A2AClient;

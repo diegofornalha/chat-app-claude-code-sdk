@@ -28,6 +28,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({ socket, onAgentSelect, se
       socket.on('a2a:agents', (data: { agents: Agent[] }) => {
         setAgents(data.agents);
         setLoading(false);
+        
+        // Claude (Direto) é o padrão - não selecionar agentes A2A automaticamente
       });
 
       socket.on('a2a:agent_registered', (agent: Agent) => {
@@ -54,13 +56,14 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({ socket, onAgentSelect, se
         socket.off('a2a:error');
       }
     };
-  }, [socket]);
+  }, [socket, selectedAgent]);
 
   const handleSelectAgent = (agentName: string | null) => {
     setLoading(true);
     
     if (agentName === null) {
       // Desselecionar agente (usar Claude direto)
+      socket.emit('a2a:select_agent', { agent: null });
       onAgentSelect(null);
       setIsOpen(false);
       setLoading(false);
