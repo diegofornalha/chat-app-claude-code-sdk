@@ -22,6 +22,8 @@ const EnhancedAgentManager = require('./services/EnhancedAgentManager');
 const OrchestratorService = require('./services/OrchestratorService');
 const QualityController = require('./services/QualityController');
 const { config, validateConfig } = require('./config/ai-sdk.config');
+const SessionContextManager = require('./sessionContext');
+const SessionContextNeo4j = require('./sessionContextNeo4j');
 const WorkerPool = require('./integrations/WorkerPool');
 const HealthChecker = require('./services/health-checker');
 const FeedbackProcessor = require('./integrations/FeedbackProcessor');
@@ -97,6 +99,10 @@ const sessions = new Map();
 const activeConnections = new Map();
 // Sistema de deduplicação de mensagens
 const processedMessages = new Map();
+
+// Inicializar gerenciador de contexto de sessão será feito após mcpClient
+// const sessionContextFallback = new SessionContextManager();
+// const sessionContextManager = new SessionContextNeo4j(mcpClient, sessionContextFallback);
 const MESSAGE_TTL = 30000; // 30 seconds
 
 // Limpeza automática de mensagens antigas
@@ -153,6 +159,10 @@ const mcpClient = new MCPClient({
   debug: process.env.MCP_DEBUG === 'true'
 });
 const ragService = new Neo4jRAGService(mcpClient);
+
+// Inicializar gerenciador de contexto de sessão APÓS mcpClient
+const sessionContextFallback = new SessionContextManager();
+const sessionContextManager = new SessionContextNeo4j(mcpClient, sessionContextFallback);
 
 // FUNÇÃO AUXILIAR PARA PROCESSAMENTO A2A
 async function processA2AMessage(socket, message, sessionId, selectedAgent, messageId) {
@@ -1304,6 +1314,101 @@ app.post('/api/memory/import', async (req, res) => {
 
 // Memory Management Routes will be initialized after system startup
 
+// Endpoint para debug - visualizar contexto de uma sessão
+app.get('/api/debug/session/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  
+  try {
+    // Buscar informações da sessão
+    const sessionData = sessions.get(sessionId);
+    
+    // Buscar contexto do Neo4j
+    let neo4jContext = null;
+    let contextFormatted = null;
+    
+    if (mcpClient && mcpClient.connected) {
+      const messages = await mcpClient.searchMemories({
+        query: `sessionId:${sessionId}`,
+        label: 'message',
+        limit: 50,
+        order_by: 'timestamp ASC'
+      });
+      
+      neo4jContext = messages;
+      
+      // Simular o que seria enviado ao Claude
+      contextFormatted = await sessionContextManager.getFormattedContext(sessionId, "[PRÓXIMA MENSAGEM]");
+    }
+    
+    // Estatísticas do contexto
+    const stats = await sessionContextManager.getStats();
+    
+    res.json({
+      sessionId,
+      exists: !!sessionData,
+      messageCount: sessionData ? sessionData.messages.length : 0,
+      messages: sessionData ? sessionData.messages.slice(-20) : [],
+      neo4j: {
+        connected: mcpClient && mcpClient.connected,
+        messagesInGraph: neo4jContext ? neo4jContext.length : 0,
+        context: neo4jContext
+      },
+      contextPreview: contextFormatted,
+      stats,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint para visualizar todos os diálogos ativos
+app.get('/api/debug/dialogs', async (req, res) => {
+  try {
+    const dialogs = [];
+    
+    for (const [sessionId, sessionData] of sessions.entries()) {
+      const lastMessage = sessionData.messages[sessionData.messages.length - 1];
+      
+      dialogs.push({
+        sessionId,
+        title: sessionData.title || 'Untitled Session',
+        messageCount: sessionData.messages.length,
+        createdAt: sessionData.createdAt,
+        lastActivity: sessionData.lastActivity,
+        lastMessage: lastMessage ? {
+          type: lastMessage.type,
+          preview: lastMessage.content ? lastMessage.content.substring(0, 100) + '...' : '',
+          timestamp: lastMessage.timestamp
+        } : null
+      });
+    }
+    
+    // Buscar também do Neo4j se disponível
+    let neo4jSessions = [];
+    if (mcpClient && mcpClient.connected) {
+      const sessions = await mcpClient.searchMemories({
+        label: 'session',
+        limit: 100
+      });
+      neo4jSessions = sessions;
+    }
+    
+    res.json({
+      activeDialogs: dialogs.length,
+      dialogs,
+      neo4j: {
+        connected: mcpClient && mcpClient.connected,
+        totalSessions: neo4jSessions.length,
+        sessions: neo4jSessions
+      },
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Endpoint para obter informações do próximo reset do Claude
 app.get('/api/claude-reset-info', async (req, res) => {
   try {
@@ -2230,12 +2335,24 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
       console.log('🔍 [DEBUG] enrichedMessage:', enrichedMessage);
       console.log('🔍 [DEBUG] message:', message);
       
-      let finalPrompt = typeof enrichedMessage === 'string' ? enrichedMessage : enrichedMessage.content || message;
+      // Adicionar mensagem do usuário ao contexto da sessão
+      await sessionContextManager.addToContext(currentSessionId, 'user', message);
+      
+      // Obter mensagem com contexto da conversa
+      let finalPrompt = await sessionContextManager.getFormattedContext(currentSessionId, message);
+      
+      // Se tem enriquecimento do memory middleware, adicionar
+      if (enrichedMessage && enrichedMessage !== message) {
+        const enrichmentStr = typeof enrichedMessage === 'string' ? enrichedMessage : enrichedMessage.content || '';
+        if (enrichmentStr && enrichmentStr !== message) {
+          finalPrompt += `\n\nInformações adicionais do sistema: ${enrichmentStr}`;
+        }
+      }
       
       console.log('🔍 [DEBUG] finalPrompt before systemPrompt:', finalPrompt);
       
       if (systemPrompt) {
-        finalPrompt = `${systemPrompt}\n\nUser: ${finalPrompt}`;
+        finalPrompt = `${systemPrompt}\n\n${finalPrompt}`;
       }
       
       console.log('🔍 [DEBUG] finalPrompt after systemPrompt:', finalPrompt);
@@ -2562,6 +2679,9 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
           timestamp: Date.now(),
           ...responseMetadata
         };
+        
+        // Adicionar resposta do assistente ao contexto da sessão
+        await sessionContextManager.addToContext(currentSessionId, 'assistant', assistantResponse);
         
         console.log('💾 [TRACE] Saving assistant message to session:', {
           messageId: assistantMessage.id,
