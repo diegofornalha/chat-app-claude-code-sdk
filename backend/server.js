@@ -133,7 +133,13 @@ async function getClaudeResetTime() {
         const hour = resetTime.getHours();
         // Formato conciso: "dia 19, 20h"
         const resetTimeStr = `dia ${day}, ${hour}h`;
-        resolve(resetTimeStr);
+        
+        // Retornar objeto com todas as informações
+        resolve({
+          timestamp: resetTimestamp,
+          date: resetTime,
+          formatted: resetTimeStr
+        });
       } else {
         resolve(null);
       }
@@ -201,10 +207,10 @@ async function processA2AMessage(socket, message, sessionId, selectedAgent, mess
         // Detectar limite do Claude atingido
         if (error.message.includes('Claude Code process exited with code 1')) {
           try {
-            const resetTime = await getClaudeResetTime();
-            if (resetTime) {
-              assistantResponse = `🕐 Seu limite será resetado:  ${resetTime}`;
-              console.log(`⏰ [CLAUDE] Limite será resetado: ${resetTime}`);
+            const resetInfo = await getClaudeResetTime();
+            if (resetInfo && resetInfo.formatted) {
+              assistantResponse = `🕐 Seu limite será resetado:  ${resetInfo.formatted}`;
+              console.log(`⏰ [CLAUDE] Limite será resetado: ${resetInfo.formatted}`);
             } else {
               assistantResponse = `🕐 Seu limite será resetado breve`;
             }
@@ -1297,6 +1303,31 @@ app.post('/api/memory/import', async (req, res) => {
 });
 
 // Memory Management Routes will be initialized after system startup
+
+// Endpoint para obter informações do próximo reset do Claude
+app.get('/api/claude-reset-info', async (req, res) => {
+  try {
+    // Tentar obter info do timestamp real do Claude
+    const resetInfo = await getClaudeResetTime();
+    
+    if (resetInfo && resetInfo.timestamp) {
+      res.json({
+        success: true,
+        resetTimestamp: resetInfo.timestamp,
+        resetDate: resetInfo.date,
+        formatted: resetInfo.formatted
+      });
+    } else {
+      // Se não tem info do Claude, verificar se temos salvo quando o limite foi atingido
+      res.json({
+        success: false,
+        message: 'No reset information available'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Plugin management endpoints
 app.get('/api/plugins', async (req, res) => {
@@ -2611,7 +2642,10 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
               resetTime = `dia ${day}, ${hour}h`;
             } else {
               // Fallback para função original
-              resetTime = await getClaudeResetTime();
+              const resetInfo = await getClaudeResetTime();
+              if (resetInfo && resetInfo.formatted) {
+                resetTime = resetInfo.formatted;
+              }
             }
             
             if (resetTime) {

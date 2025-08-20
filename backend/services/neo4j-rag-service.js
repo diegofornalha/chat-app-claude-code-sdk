@@ -143,6 +143,28 @@ class Neo4jRAGService {
   }
 
   /**
+   * Buscar memórias com formato correto
+   */
+  async searchMemories(params = {}) {
+    console.log('🔍 Buscando memórias...');
+    
+    // Tentar via MCP primeiro
+    if (this.mcp && this.mcp.connected) {
+      try {
+        const memories = await this.mcp.searchMemories(params);
+        console.log(`✅ Encontradas ${memories.length} memórias via MCP`);
+        return { memories };
+      } catch (error) {
+        console.warn('⚠️ Falha na busca via MCP, usando fallback:', error.message);
+      }
+    }
+    
+    // Fallback: busca direta
+    const directResult = await this.directNeo4jSearch(params.query || '', params);
+    return { memories: directResult };
+  }
+
+  /**
    * Busca direta no Neo4j
    */
   async directNeo4jSearch(query, options = {}) {
@@ -363,6 +385,405 @@ class Neo4jRAGService {
    */
   clearCache() {
     this.cache.clear();
+  }
+
+  /**
+   * Verificar se está conectado
+   */
+  isConnected() {
+    return this.mcp?.connected || false;
+  }
+
+  /**
+   * Listar labels de memória
+   */
+  async listMemoryLabels() {
+    console.log('🏷️ Listando labels de memória...');
+    
+    // Tentar via MCP primeiro
+    if (this.mcp && this.mcp.connected) {
+      try {
+        const labels = await this.mcp.listMemoryLabels();
+        console.log(`✅ Encontrados ${labels.length} labels via MCP`);
+        return labels;
+      } catch (error) {
+        console.warn('⚠️ Falha ao listar labels via MCP, usando fallback:', error.message);
+      }
+    }
+    
+    // Fallback: busca direta
+    return await this.directListMemoryLabels();
+  }
+
+  /**
+   * Criar nova memória
+   * Aceita tanto createMemory(label, properties) quanto createMemory({ label, properties })
+   */
+  async createMemory(labelOrObject, properties) {
+    let label, props;
+    
+    // Compatibilidade: aceitar tanto objeto quanto parâmetros separados
+    if (typeof labelOrObject === 'object' && labelOrObject.label) {
+      // Chamada: createMemory({ label, properties })
+      label = labelOrObject.label;
+      props = labelOrObject.properties || {};
+    } else {
+      // Chamada: createMemory(label, properties)
+      label = labelOrObject;
+      props = properties || {};
+    }
+    
+    console.log(`📝 Criando memória com label: ${label}...`);
+    
+    // Tentar via MCP primeiro
+    if (this.mcp && this.mcp.connected) {
+      try {
+        const result = await this.mcp.createMemory(label, props);
+        console.log('✅ Memória criada via MCP');
+        this.clearCache();
+        return result;
+      } catch (error) {
+        console.warn('⚠️ Falha ao criar via MCP, usando fallback:', error.message);
+      }
+    }
+    
+    // Fallback: criação direta
+    return await this.directCreateMemory(label, props);
+  }
+
+  /**
+   * Atualizar memória existente
+   * Aceita tanto updateMemory(nodeId, properties) quanto updateMemory({ nodeId, properties })
+   */
+  async updateMemory(nodeIdOrObject, properties) {
+    let nodeId, props;
+    
+    // Compatibilidade: aceitar tanto objeto quanto parâmetros separados
+    if (typeof nodeIdOrObject === 'object' && nodeIdOrObject.nodeId !== undefined) {
+      // Chamada: updateMemory({ nodeId, properties })
+      nodeId = nodeIdOrObject.nodeId;
+      props = nodeIdOrObject.properties || {};
+    } else {
+      // Chamada: updateMemory(nodeId, properties)
+      nodeId = nodeIdOrObject;
+      props = properties || {};
+    }
+    
+    console.log(`📝 Atualizando memória ${nodeId}...`);
+    
+    // Tentar via MCP primeiro
+    if (this.mcp && this.mcp.connected) {
+      try {
+        const result = await this.mcp.updateMemory(nodeId, props);
+        console.log('✅ Memória atualizada via MCP');
+        this.clearCache();
+        return result;
+      } catch (error) {
+        console.warn('⚠️ Falha ao atualizar via MCP, usando fallback:', error.message);
+      }
+    }
+    
+    // Fallback: atualização direta
+    return await this.directUpdateMemory(nodeId, props);
+  }
+
+  /**
+   * Criar conexão entre memórias
+   * Aceita tanto createConnection(fromMemoryId, toMemoryId, type, properties) quanto createConnection({ fromMemoryId, toMemoryId, type, properties })
+   */
+  async createConnection(fromMemoryIdOrObject, toMemoryId, type, properties = {}) {
+    let fromMemoryId, toId, connType, props;
+    
+    // Compatibilidade: aceitar tanto objeto quanto parâmetros separados
+    if (typeof fromMemoryIdOrObject === 'object' && fromMemoryIdOrObject.fromMemoryId !== undefined) {
+      // Chamada: createConnection({ fromMemoryId, toMemoryId, type, properties })
+      fromMemoryId = fromMemoryIdOrObject.fromMemoryId;
+      toId = fromMemoryIdOrObject.toMemoryId;
+      connType = fromMemoryIdOrObject.type;
+      props = fromMemoryIdOrObject.properties || {};
+    } else {
+      // Chamada: createConnection(fromMemoryId, toMemoryId, type, properties)
+      fromMemoryId = fromMemoryIdOrObject;
+      toId = toMemoryId;
+      connType = type;
+      props = properties;
+    }
+    
+    console.log(`🔗 Criando conexão ${connType}: ${fromMemoryId} -> ${toId}...`);
+    
+    // Tentar via MCP primeiro
+    if (this.mcp && this.mcp.connected) {
+      try {
+        const result = await this.mcp.createConnection(fromMemoryId, toId, connType, props);
+        console.log('✅ Conexão criada via MCP');
+        this.clearCache();
+        return result;
+      } catch (error) {
+        console.warn('⚠️ Falha ao criar conexão via MCP, usando fallback:', error.message);
+      }
+    }
+    
+    // Fallback: criação direta
+    return await this.directCreateConnection(fromMemoryId, toId, connType, props);
+  }
+
+  /**
+   * Deletar memória
+   * Aceita tanto deleteMemory(nodeId) quanto deleteMemory({ nodeId })
+   */
+  async deleteMemory(nodeIdOrObject) {
+    let nodeId;
+    
+    // Compatibilidade: aceitar tanto objeto quanto parâmetro direto
+    if (typeof nodeIdOrObject === 'object' && nodeIdOrObject.nodeId !== undefined) {
+      // Chamada: deleteMemory({ nodeId })
+      nodeId = nodeIdOrObject.nodeId;
+    } else {
+      // Chamada: deleteMemory(nodeId)
+      nodeId = nodeIdOrObject;
+    }
+    
+    console.log(`🗑️ Deletando memória ${nodeId}...`);
+    
+    // Tentar via MCP primeiro
+    if (this.mcp && this.mcp.connected) {
+      try {
+        const result = await this.mcp.deleteMemory(nodeId);
+        console.log('✅ Memória deletada via MCP');
+        this.clearCache();
+        return result;
+      } catch (error) {
+        console.warn('⚠️ Falha ao deletar via MCP, usando fallback:', error.message);
+      }
+    }
+    
+    // Fallback: deleção direta
+    return await this.directDeleteMemory(nodeId);
+  }
+
+  /**
+   * Deletar conexão entre memórias
+   */
+  async deleteConnection(fromMemoryId, toMemoryId, type) {
+    console.log(`🗑️ Deletando conexão ${type}: ${fromMemoryId} -> ${toMemoryId}...`);
+    
+    // Tentar via MCP primeiro (se método existir)
+    if (this.mcp && this.mcp.connected && typeof this.mcp.deleteConnection === 'function') {
+      try {
+        const result = await this.mcp.deleteConnection(fromMemoryId, toMemoryId, type);
+        console.log('✅ Conexão deletada via MCP');
+        this.clearCache();
+        return result;
+      } catch (error) {
+        console.warn('⚠️ Falha ao deletar conexão via MCP, usando fallback:', error.message);
+      }
+    }
+    
+    // Fallback: deleção direta
+    return await this.directDeleteConnection(fromMemoryId, toMemoryId, type);
+  }
+
+  // === Métodos de fallback direto ===
+
+  /**
+   * Listar labels diretamente no Neo4j
+   */
+  async directListMemoryLabels() {
+    await this.initDirectConnection();
+    
+    const query = `
+      CALL db.labels() YIELD label
+      RETURN collect(label) as labels
+    `;
+    
+    try {
+      const result = await this.session.run(query);
+      const labels = result.records[0]?.get('labels') || [];
+      console.log(`✅ Encontrados ${labels.length} labels diretos`);
+      return labels;
+    } catch (error) {
+      console.error('❌ Erro ao listar labels diretamente:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Criar memória diretamente no Neo4j
+   */
+  async directCreateMemory(label, properties) {
+    await this.initDirectConnection();
+    
+    const query = `
+      CREATE (n:${label} $properties)
+      RETURN n, ID(n) as nodeId
+    `;
+    
+    try {
+      const result = await this.session.run(query, { properties });
+      const record = result.records[0];
+      const node = record.get('n');
+      const nodeId = record.get('nodeId');
+      
+      console.log(`✅ Memória criada diretamente com ID ${nodeId}`);
+      this.clearCache();
+      return {
+        memory: {
+          _id: nodeId.toNumber(),
+          label,
+          ...node.properties
+        }
+      };
+    } catch (error) {
+      console.error('❌ Erro ao criar memória diretamente:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Atualizar memória diretamente no Neo4j
+   */
+  async directUpdateMemory(nodeId, properties) {
+    await this.initDirectConnection();
+    
+    const query = `
+      MATCH (n) WHERE ID(n) = $nodeId
+      SET n += $properties
+      RETURN n
+    `;
+    
+    try {
+      const result = await this.session.run(query, {
+        nodeId: neo4j.int(nodeId),
+        properties
+      });
+      
+      if (result.records.length === 0) {
+        throw new Error(`Memória com ID ${nodeId} não encontrada`);
+      }
+      
+      const node = result.records[0].get('n');
+      console.log(`✅ Memória ${nodeId} atualizada diretamente`);
+      this.clearCache();
+      return {
+        memory: {
+          _id: nodeId,
+          ...node.properties
+        }
+      };
+    } catch (error) {
+      console.error('❌ Erro ao atualizar memória diretamente:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Criar conexão diretamente no Neo4j
+   */
+  async directCreateConnection(fromMemoryId, toMemoryId, type, properties = {}) {
+    await this.initDirectConnection();
+    
+    const query = `
+      MATCH (from) WHERE ID(from) = $fromId
+      MATCH (to) WHERE ID(to) = $toId
+      CREATE (from)-[r:${type} $properties]->(to)
+      RETURN r, ID(r) as relId
+    `;
+    
+    try {
+      const result = await this.session.run(query, {
+        fromId: neo4j.int(fromMemoryId),
+        toId: neo4j.int(toMemoryId),
+        properties
+      });
+      
+      if (result.records.length === 0) {
+        throw new Error(`Não foi possível criar conexão entre ${fromMemoryId} e ${toMemoryId}`);
+      }
+      
+      const relationship = result.records[0].get('r');
+      const relId = result.records[0].get('relId');
+      
+      console.log(`✅ Conexão ${type} criada diretamente com ID ${relId}`);
+      this.clearCache();
+      return {
+        connection: {
+          _id: relId.toNumber(),
+          type,
+          fromMemoryId,
+          toMemoryId,
+          ...relationship.properties
+        }
+      };
+    } catch (error) {
+      console.error('❌ Erro ao criar conexão diretamente:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Deletar memória diretamente no Neo4j
+   */
+  async directDeleteMemory(nodeId) {
+    await this.initDirectConnection();
+    
+    const query = `
+      MATCH (n) WHERE ID(n) = $nodeId
+      DETACH DELETE n
+      RETURN count(n) as deleted
+    `;
+    
+    try {
+      const result = await this.session.run(query, {
+        nodeId: neo4j.int(nodeId)
+      });
+      
+      const deleted = result.records[0]?.get('deleted')?.toNumber() || 0;
+      
+      if (deleted === 0) {
+        throw new Error(`Memória com ID ${nodeId} não encontrada`);
+      }
+      
+      console.log(`✅ Memória ${nodeId} deletada diretamente`);
+      this.clearCache();
+      return { success: true, deleted };
+    } catch (error) {
+      console.error('❌ Erro ao deletar memória diretamente:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Deletar conexão diretamente no Neo4j
+   */
+  async directDeleteConnection(fromMemoryId, toMemoryId, type) {
+    await this.initDirectConnection();
+    
+    const query = `
+      MATCH (from)-[r:${type}]->(to)
+      WHERE ID(from) = $fromId AND ID(to) = $toId
+      DELETE r
+      RETURN count(r) as deleted
+    `;
+    
+    try {
+      const result = await this.session.run(query, {
+        fromId: neo4j.int(fromMemoryId),
+        toId: neo4j.int(toMemoryId)
+      });
+      
+      const deleted = result.records[0]?.get('deleted')?.toNumber() || 0;
+      
+      if (deleted === 0) {
+        throw new Error(`Conexão ${type} entre ${fromMemoryId} e ${toMemoryId} não encontrada`);
+      }
+      
+      console.log(`✅ Conexão ${type} deletada diretamente`);
+      this.clearCache();
+      return { success: true, deleted };
+    } catch (error) {
+      console.error('❌ Erro ao deletar conexão diretamente:', error);
+      throw error;
+    }
   }
 
   /**

@@ -22,10 +22,11 @@ class MemoryRoutes {
         if (sessionId) searchQuery += ` session:${sessionId}`;
         if (userId) searchQuery += ` user:${userId}`;
         
-        const memories = await this.ragService.searchMemories({
+        const result = await this.ragService.searchMemories({
           query: searchQuery,
           limit: parseInt(limit)
         });
+        const memories = result?.memories || result || [];
         
         res.json({
           success: true,

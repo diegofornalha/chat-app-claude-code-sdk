@@ -58,35 +58,39 @@ class MemoryMiddleware {
     const contexts = [];
     
     // 1. Buscar mensagens anteriores da sessão
-    const sessionHistory = await this.ragService.searchMemories({
+    const sessionResult = await this.ragService.searchMemories({
       query: `session:${sessionId}`,
       limit: this.contextWindow,
       order_by: 'created_at DESC'
     });
+    const sessionHistory = sessionResult?.memories || sessionResult || [];
     contexts.push({ type: 'session', data: sessionHistory });
     
     // 2. Buscar memórias relacionadas ao conteúdo
     if (message.content) {
-      const semanticMemories = await this.ragService.searchMemories({
+      const semanticResult = await this.ragService.searchMemories({
         query: message.content,
         limit: 5
       });
+      const semanticMemories = semanticResult?.memories || semanticResult || [];
       contexts.push({ type: 'semantic', data: semanticMemories });
     }
     
     // 3. Buscar padrões de interação do usuário
-    const userPatterns = await this.ragService.searchMemories({
+    const patternsResult = await this.ragService.searchMemories({
         query: `user:${userId} type:pattern`,
         limit: 3
       });
+    const userPatterns = patternsResult?.memories || patternsResult || [];
     contexts.push({ type: 'patterns', data: userPatterns });
     
     // 4. Buscar conhecimento do domínio
     if (message.domain || message.topic) {
-      const domainKnowledge = await this.ragService.searchMemories({
+      const domainResult = await this.ragService.searchMemories({
         query: `domain:${message.domain || message.topic}`,
         limit: 5
       });
+      const domainKnowledge = domainResult?.memories || domainResult || [];
       contexts.push({ type: 'domain', data: domainKnowledge });
     }
     
@@ -373,10 +377,11 @@ class MemoryMiddleware {
   async updateUserPatterns(userId, intent) {
     try {
       // Buscar padrão existente
-      const existingPattern = await this.ragService.searchMemories({
+      const patternResult = await this.ragService.searchMemories({
         query: `user:${userId} intent:${intent} type:pattern`,
         limit: 1
       });
+      const existingPattern = patternResult?.memories || patternResult || [];
       
       if (existingPattern && existingPattern.length > 0) {
         // Atualizar frequência
