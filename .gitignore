@@ -30,3 +30,4 @@ yarn-error.log*
 # OS generated files
 Thumbs.db
 .claude-flow/metrics/*
+.swarm/memory.db
