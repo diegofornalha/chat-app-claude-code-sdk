@@ -1,0 +1,52 @@
+🚀 Initializing Chat Server Systems...
+📊 Connecting to Neo4j via MCP...
+🔌 Conectando MCP Client ao Neo4j...
+🔄 Tentativa 1/3 de conectar ao MCP...
+🚀 Enhanced Claude Code SDK Server running on port 8081
+📋 Features enabled:
+  • Real-time streaming chat
+  • File upload and analysis
+  • Session management
+  • Conversation export
+  • Advanced Claude Code SDK integration
+  • WebSocket connections for real-time updates
+  • Enhanced Agent Manager with Orchestrator-Worker pattern
+  • Quality Control and Feedback Loops
+  • Real-time metrics and monitoring
+⏱️  Timeout na tentativa 1, tentando novamente...
+🔄 Tentativa 2/3 de conectar ao MCP...
+🔍 [HEALTH] Testing Claude Code SDK...
+🔍 [HEALTH] query function type: function
+🔍 [HEALTH] query function: [AsyncGeneratorFunction: query]
+🔍 [HEALTH] Test prompt: Say 'Hello' in one word
+🔍 [HEALTH] Test options: { maxTurns: 1 }
+Spawning Claude Code process: node /Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/node_modules/@anthropic-ai/claude-code/cli.js --output-format stream-json --verbose --max-turns 1 --print Say 'Hello' in one word
+⏱️  Timeout na tentativa 2, tentando novamente...
+🔄 Tentativa 3/3 de conectar ao MCP...
+❌ Erro conectando MCP: Error: Timeout conectando ao MCP após 3 tentativas
+    at Timeout._onTimeout (/Users/2a/.claude/.conductor/kingston/chat-app-claude-code-sdk/backend/mcp/client.js:114:18)
+    at listOnTimeout (node:internal/timers:608:17)
+    at process.processTimers (node:internal/timers:543:7)
+⚠️ MCP Client failed (continuing without memory): Timeout conectando ao MCP após 3 tentativas
+🔌 Initializing Plugin Manager...
+👁 Hot-reload de plugins ativado
+✅ PluginManager inicializado com 0 plugins
+✅ Plugin Manager initialized with 0 plugins
+📦 Available plugins: example-plugin
+🧠 Initializing Memory Middleware...
+✅ Memory Middleware initialized - ALL messages will be saved to Neo4j
+🧠 Memory management routes registered at /api/memory/v2
+✅ Context Engine initialized with MemoryMiddleware integration
+🎯 Initializing AI SDK v5 agents...
+🔧 Setting up Enhanced Agent Manager ecosystem...
+🔧 WorkerPool initialized with 5 workers
+🧠 FeedbackProcessor initialized with learning capabilities
+⚠️ AI SDK v5 initialization failed: Cannot read properties of undefined (reading 'bind')
+
+📋 System Status:
+  MCP (Neo4j): ❌ Disconnected
+  A2A Agents: ❌ None
+  Context Engine: ✅ Active
+
+Client connected: j7E4nuX5srYnU-A2AAAB
+Client disconnected: j7E4nuX5srYnU-A2AAAB

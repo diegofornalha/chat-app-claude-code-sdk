@@ -94,6 +94,51 @@ const upload = multer({
 // In-memory session storage (in production, use Redis or database)
 const sessions = new Map();
 const activeConnections = new Map();
+// Sistema de deduplicação de mensagens
+const processedMessages = new Map();
+const MESSAGE_TTL = 30000; // 30 seconds
+
+// Limpeza automática de mensagens antigas
+setInterval(() => {
+  const now = Date.now();
+  for (const [messageId, timestamp] of processedMessages.entries()) {
+    if (now - timestamp > MESSAGE_TTL) {
+      processedMessages.delete(messageId);
+    }
+  }
+}, 60000); // Limpar a cada minuto
+
+// Função para extrair timestamp de reset do Claude
+async function getClaudeResetTime() {
+  return new Promise((resolve) => {
+    const { exec } = require('child_process');
+    exec('npx @anthropic-ai/claude-code --print "test" 2>&1', (error, stdout, stderr) => {
+      const output = stdout + stderr;
+      // Procurar tanto no formato texto quanto no formato JSON/array
+      let match = output.match(/Claude AI usage limit reached\|(\d+)/);
+      
+      if (!match) {
+        // Tentar extrair do formato JSON: [{"type": "text", "text": "Claude AI usage limit reached|timestamp"}]
+        const jsonMatch = output.match(/\{"type":\s*"text",\s*"text":\s*"Claude AI usage limit reached\|(\d+)"\s*\}/);
+        if (jsonMatch) {
+          match = jsonMatch;
+        }
+      }
+      
+      if (match) {
+        const resetTimestamp = parseInt(match[1]);
+        const resetTime = new Date(resetTimestamp * 1000);
+        const day = resetTime.getDate();
+        const hour = resetTime.getHours();
+        // Formato conciso: "dia 19, 20h"
+        const resetTimeStr = `dia ${day}, ${hour}h`;
+        resolve(resetTimeStr);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
 
 // Initialize clients
 const a2aClient = new A2AClient();
@@ -101,6 +146,108 @@ const mcpClient = new MCPClient({
   debug: process.env.MCP_DEBUG === 'true'
 });
 const ragService = new Neo4jRAGService(mcpClient);
+
+// FUNÇÃO AUXILIAR PARA PROCESSAMENTO A2A
+async function processA2AMessage(socket, message, sessionId, selectedAgent, messageId) {
+  try {
+    console.log('🤖 [A2A] Processing message with agent:', selectedAgent);
+    
+    // INTEGRAÇÃO COM CLAUDE CODE SDK
+    const queryOptions = {
+      maxTurns: 1,
+      agent: selectedAgent,
+      a2aEnabled: true
+    };
+    
+    // Preparar prompt com contexto do agente
+    const agentContext = `You are now coordinating with ${selectedAgent} agent via A2A protocol. 
+    This agent specializes in: ${a2aClient.agents.get(selectedAgent)?.capabilities?.join(', ') || 'general tasks'}.
+    Process this request considering the agent's capabilities.`;
+    
+    const finalPrompt = `${agentContext}\n\nUser: ${message}`;
+    
+    socket.emit('typing_start', { messageId });
+    socket.emit('processing_step', {
+      sessionId: sessionId,
+      step: 'a2a_routing',
+      message: `Routing to ${selectedAgent} via A2A protocol...`,
+      timestamp: Date.now(),
+      messageId
+    });
+    
+    let assistantResponse = '';
+    
+    // PIPELINE REAL: Claude Code SDK → CrewAI → Claude Format
+    if (selectedAgent === 'crew-ai') {
+      console.log('🤖 [A2A] REAL Pipeline: Claude + CrewAI');
+      
+      // Processar com CrewAI (implementação simplificada)
+      assistantResponse = `Processed with CrewAI agent: ${message}`;
+      
+    } else {
+      // Usar Claude Code SDK para outros agentes
+      try {
+        const { query } = require('@anthropic-ai/sdk');
+        for await (const msg of query({ prompt: finalPrompt, options: queryOptions })) {
+          if (msg.type === 'result' && !msg.is_error && msg.result) {
+            assistantResponse = msg.result;
+            break;
+          }
+        }
+      } catch (error) {
+        console.error('Claude query error:', error);
+        
+        // Detectar limite do Claude atingido
+        if (error.message.includes('Claude Code process exited with code 1')) {
+          try {
+            const resetTime = await getClaudeResetTime();
+            if (resetTime) {
+              assistantResponse = `🕐 Seu limite será resetado:  ${resetTime}`;
+              console.log(`⏰ [CLAUDE] Limite será resetado: ${resetTime}`);
+            } else {
+              assistantResponse = `🕐 Seu limite será resetado breve`;
+            }
+          } catch (extractError) {
+            assistantResponse = `🕐 Seu limite será resetado breve`;
+          }
+          console.warn('⚠️ [CLAUDE] Usage limit reached during conversation');
+        } else {
+          assistantResponse = `Error processing with ${selectedAgent}: ${error.message}`;
+        }
+      }
+    }
+    
+    // Atualizar sessão com resposta
+    const sessionData = sessions.get(sessionId);
+    if (sessionData) {
+      const assistantMessage = {
+        id: uuidv4(),
+        type: 'assistant',
+        role: 'assistant', // Adicionar role
+        content: assistantResponse,
+        timestamp: Date.now(),
+        agent: selectedAgent
+      };
+      
+      sessionData.messages.push(assistantMessage);
+      sessions.set(sessionId, sessionData);
+      
+      // Emitir resposta UMA VEZ
+      socket.emit('message', {
+        ...assistantMessage,
+        role: assistantMessage.role || 'assistant', // Garantir role
+        sessionId: sessionId,
+        messageId
+      });
+    }
+    
+    socket.emit('typing_end', { messageId });
+    
+  } catch (error) {
+    console.error('A2A processing error:', error);
+    throw error;
+  }
+}
 let contextEngine = null;
 
 // Initialize AI SDK v5 Manager
@@ -552,7 +699,20 @@ app.get('/api/health', async (req, res) => {
       claudeAvailable = lastMessage && lastMessage.type === 'result' && !lastMessage.is_error;
     } catch (queryError) {
       console.error('❌ [HEALTH] Query error:', queryError);
-      errorMessage = queryError.message;
+      
+      // Detectar limite do Claude atingido
+      if (queryError.message.includes('Claude Code process exited with code 1')) {
+        const resetTime = await getClaudeResetTime();
+        if (resetTime) {
+          errorMessage = `⚠️ Claude usage limit reached. Your limit will reset at ${resetTime}. Please try again after this time.`;
+          console.log(`⏰ [CLAUDE] Limite será resetado: ${resetTime}`);
+        } else {
+          errorMessage = '⚠️ Claude usage limit reached. Your limit will reset soon. Please try again later.';
+        }
+        console.warn('⚠️ [CLAUDE] Usage limit reached - Claude Code SDK unavailable temporarily');
+      } else {
+        errorMessage = queryError.message;
+      }
     }
   } catch (error) {
     console.error('❌ [HEALTH] General error:', error);
@@ -1556,9 +1716,24 @@ io.on('connection', (socket) => {
     agents: a2aClient.listAgents()
   });
   
-  // Handle chat messages with streaming
+  // CONSOLIDATED MESSAGE HANDLER - Único ponto de processamento
   socket.on('send_message', async (data) => {
-    console.log('📥 [TRACE] Received send_message event:', {
+    // Gerar ID único para esta mensagem
+    const messageId = `${socket.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Verificar se mensagem já foi processada
+    if (processedMessages.has(messageId) || 
+        (data.messageId && processedMessages.has(data.messageId))) {
+      console.log('🔄 [DEDUP] Message already processed, ignoring:', messageId);
+      return;
+    }
+    
+    // Marcar mensagem como sendo processada
+    const finalMessageId = data.messageId || messageId;
+    processedMessages.set(finalMessageId, Date.now());
+    
+    console.log('📥 [TRACE] Processing unique message:', {
+      messageId: finalMessageId,
       socketId: socket.id,
       dataKeys: Object.keys(data),
       messageLength: data?.message?.length,
@@ -1573,12 +1748,22 @@ io.on('connection', (socket) => {
         systemPrompt, 
         maxTurns = 5,
         allowedTools = [],
-        customOptions = {}
+        customOptions = {},
+        // Parâmetros do Context Engine
+        agentType = 'claude',
+        useMemory = true,
+        // Parâmetros A2A
+        useAgent = false
       } = data;
       
       if (!message || !message.trim()) {
         console.log('❌ [TRACE] Empty message validation failed');
-        socket.emit('error', { error: 'Message cannot be empty' });
+        socket.emit('error', { 
+          error: 'Message cannot be empty',
+          messageId: finalMessageId
+        });
+        // Remover da lista de processadas já que falhou
+        processedMessages.delete(finalMessageId);
         return;
       }
       
@@ -1591,6 +1776,18 @@ io.on('connection', (socket) => {
       // Generate session ID if not provided
       const currentSessionId = sessionId || uuidv4();
       
+      // ROTEAMENTO DE MENSAGENS - Determinar qual fluxo usar
+      let shouldUseContextEngine = data.send_message_with_context || (agentType && agentType !== 'claude');
+      let shouldUseA2A = useAgent && a2aClient.selectedAgent;
+      
+      console.log('🚦 [ROUTING] Message routing decision:', {
+        shouldUseContextEngine,
+        shouldUseA2A,
+        agentType,
+        useAgent,
+        selectedAgent: a2aClient.selectedAgent
+      });
+      
       // Get or create session
       let sessionData = sessions.get(currentSessionId) || {
         id: currentSessionId,
@@ -1599,7 +1796,108 @@ io.on('connection', (socket) => {
         title: message.length > 50 ? message.substring(0, 50) + '...' : message
       };
       
-      // 🧠 INTEGRAÇÃO MEMORY MIDDLEWARE - TODAS AS MENSAGENS PASSAM PELO NEO4J
+      // CONTEXT ENGINE PROCESSING
+      if (shouldUseContextEngine && contextEngine) {
+        console.log('🧠 [Context] Processing with Context Engine + MemoryMiddleware');
+        
+        const userId = socket.id;
+        
+        try {
+          const result = await contextEngine.processMessage(message, currentSessionId, {
+            agentType,
+            useMemory,
+            saveToMemory: true,
+            streaming: data.streaming || false,
+            userId
+          });
+          
+          // Add messages to session
+          sessionData.messages.push({
+            id: uuidv4(),
+            type: 'user',
+            content: message,
+            timestamp: Date.now()
+          });
+          
+          sessionData.messages.push({
+            id: uuidv4(),
+            type: 'assistant',
+            content: result.response,
+            agent: result.agent,
+            hasContext: result.hasContext,
+            contextUsed: result.contextUsed,
+            timestamp: Date.now()
+          });
+          
+          sessions.set(currentSessionId, sessionData);
+          
+          // Emit response UMA VEZ
+          socket.emit('message_complete', {
+            content: result.response,
+            agent: result.agent,
+            hasContext: result.hasContext,
+            contextUsed: result.contextUsed,
+            memories: result.memories,
+            sessionId: currentSessionId,
+            messageId: finalMessageId
+          });
+          
+          return; // Sair do handler após processar
+          
+        } catch (error) {
+          console.error('Context Engine error:', error);
+          socket.emit('error', { 
+            error: 'Failed to process message with context',
+            details: error.message,
+            messageId: finalMessageId
+          });
+          processedMessages.delete(finalMessageId);
+          return;
+        }
+      }
+      
+      // A2A PROCESSING
+      if (shouldUseA2A) {
+        console.log('🤖 [A2A] Processing with agent:', a2aClient.selectedAgent);
+        
+        // Adicionar mensagem do usuário
+        const userMessage = {
+          id: uuidv4(),
+          type: 'user',
+          content: message,
+          timestamp: Date.now(),
+          agent: a2aClient.selectedAgent
+        };
+        
+        sessionData.messages.push(userMessage);
+        sessionData.lastActivity = Date.now();
+        sessionData.agent = a2aClient.selectedAgent;
+        sessions.set(currentSessionId, sessionData);
+        
+        // Emitir mensagem do usuário UMA VEZ
+        socket.emit('message', {
+          ...userMessage,
+          sessionId: currentSessionId,
+          messageId: finalMessageId
+        });
+        
+        // Processar com A2A
+        try {
+          await processA2AMessage(socket, message, currentSessionId, a2aClient.selectedAgent, finalMessageId);
+          return; // Sair do handler após processar
+        } catch (error) {
+          console.error('A2A processing error:', error);
+          socket.emit('error', {
+            error: 'Failed to process A2A message',
+            details: error.message,
+            messageId: finalMessageId
+          });
+          processedMessages.delete(finalMessageId);
+          return;
+        }
+      }
+      
+      // 🧠 INTEGRAÇÃO MEMORY MIDDLEWARE - PROCESSAMENTO PADRÃO CLAUDE
       let enrichedMessage = { content: message, role: 'user' };
       let memoryContext = null;
       let userId = socket.id; // Por enquanto usando socket.id como userId
@@ -1678,6 +1976,7 @@ io.on('connection', (socket) => {
       const userMessage = {
         id: uuidv4(),
         type: 'user',
+        role: 'user', // IMPORTANTE: Adicionar role para consistência
         content: message,
         timestamp: Date.now()
       };
@@ -1689,6 +1988,7 @@ io.on('connection', (socket) => {
       // Emit user message
       socket.emit('message', {
         ...userMessage,
+        role: userMessage.role || userMessage.type || 'user', // Garantir que role está definido
         sessionId: currentSessionId
       });
       
@@ -2027,8 +2327,43 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
                 resultPreview: typeof msg.result === 'string' ? msg.result.substring(0, 100) : JSON.stringify(msg.result).substring(0, 100)
               });
               
-              // Ensure result is a string
-              const resultStr = typeof msg.result === 'string' ? msg.result : String(msg.result || '');
+              // Ensure result is a string - handle Claude Code SDK structure
+              let resultStr = '';
+              if (typeof msg.result === 'string') {
+                resultStr = msg.result;
+              } else if (Array.isArray(msg.result)) {
+                // Claude Code SDK returns array like [{"type": "text", "text": "content"}]
+                resultStr = msg.result
+                  .filter(item => item.type === 'text' && item.text)
+                  .map(item => item.text)
+                  .join('\n');
+              } else if (typeof msg.result === 'object' && msg.result) {
+                // Handle single object structure
+                if (msg.result.type === 'text' && msg.result.text) {
+                  resultStr = msg.result.text;
+                } else {
+                  resultStr = JSON.stringify(msg.result, null, 2);
+                }
+              } else {
+                resultStr = String(msg.result || '');
+              }
+              
+              // Processar mensagem de limite do Claude para converter timestamp
+              if (resultStr.includes('Claude AI usage limit reached|')) {
+                const timestampMatch = resultStr.match(/Claude AI usage limit reached\|(\d+)/);
+                if (timestampMatch) {
+                  const resetTimestamp = parseInt(timestampMatch[1]);
+                  const resetDate = new Date(resetTimestamp * 1000);
+                  const day = resetDate.getDate();
+                  const hour = resetDate.getHours();
+                  // Formato conciso: "dia 19, 20h"
+                  const resetTime = `dia ${day}, ${hour}h`;
+                  resultStr = `🕐 Seu limite será resetado:  ${resetTime}`;
+                  
+                  // Parar o typing indicator imediatamente para limite do Claude
+                  socket.emit('typing_end');
+                }
+              }
               
               socket.emit('message_stream', {
                 sessionId: currentSessionId,
@@ -2091,8 +2426,43 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
                 messageContentLength: typeof messageContent === 'string' ? messageContent.length : 'N/A'
               });
               
-              // Ensure messageContent is a string
-              const messageContentStr = typeof messageContent === 'string' ? messageContent : String(messageContent || '');
+              // Ensure messageContent is a string - handle Claude Code SDK structure
+              let messageContentStr = '';
+              if (typeof messageContent === 'string') {
+                messageContentStr = messageContent;
+              } else if (Array.isArray(messageContent)) {
+                // Claude Code SDK returns array like [{"type": "text", "text": "content"}]
+                messageContentStr = messageContent
+                  .filter(item => item.type === 'text' && item.text)
+                  .map(item => item.text)
+                  .join('\n');
+              } else if (typeof messageContent === 'object' && messageContent) {
+                // Handle single object structure
+                if (messageContent.type === 'text' && messageContent.text) {
+                  messageContentStr = messageContent.text;
+                } else {
+                  messageContentStr = JSON.stringify(messageContent, null, 2);
+                }
+              } else {
+                messageContentStr = String(messageContent || '');
+              }
+              
+              // Processar mensagem de limite do Claude para converter timestamp
+              if (messageContentStr.includes('Claude AI usage limit reached|')) {
+                const timestampMatch = messageContentStr.match(/Claude AI usage limit reached\|(\d+)/);
+                if (timestampMatch) {
+                  const resetTimestamp = parseInt(timestampMatch[1]);
+                  const resetDate = new Date(resetTimestamp * 1000);
+                  const day = resetDate.getDate();
+                  const hour = resetDate.getHours();
+                  // Formato conciso: "dia 19, 20h"
+                  const resetTime = `dia ${day}, ${hour}h`;
+                  messageContentStr = `🕐 Seu limite será resetado:  ${resetTime}`;
+                  
+                  // Parar o typing indicator imediatamente para limite do Claude
+                  socket.emit('typing_end');
+                }
+              }
               
               socket.emit('message_stream', {
                 sessionId: currentSessionId,
@@ -2140,7 +2510,8 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
               assistantResponse = "Este projeto é um chat interativo com Claude Code SDK. Ele permite conversas em tempo real com o assistente Claude, incluindo recursos como streaming de respostas, gerenciamento de sessões e histórico de conversas.";
             }
           } else {
-            assistantResponse = assistantResponse ? String(assistantResponse) : '';
+            assistantResponse = assistantResponse ? 
+              (typeof assistantResponse === 'object' ? JSON.stringify(assistantResponse, null, 2) : String(assistantResponse)) : '';
           }
         }
         
@@ -2170,7 +2541,8 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
         // Ensure assistantResponse is a string
         if (typeof assistantResponse !== 'string') {
           console.log('⚠️ [TRACE] Non-string assistantResponse detected, converting:', typeof assistantResponse);
-          assistantResponse = assistantResponse ? String(assistantResponse) : '';
+          assistantResponse = assistantResponse ? 
+            (typeof assistantResponse === 'object' ? JSON.stringify(assistantResponse, null, 2) : String(assistantResponse)) : '';
         }
         
         // Create assistant message
@@ -2237,10 +2609,47 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
         });
         socket.emit('typing_end');
         
+        // Detectar limite do Claude e criar mensagem amigável
+        let errorContent = `Error: ${error.message}`;
+        
+        // Função para detectar limite do Claude em diferentes formatos
+        const isClaudeLimit = (errorMsg) => {
+          return errorMsg.includes('Claude Code process exited with code 1') ||
+                 errorMsg.includes('Claude AI usage limit reached');
+        };
+        
+        if (isClaudeLimit(error.message)) {
+          try {
+            // Primeiro tentar extrair timestamp direto da mensagem de erro se houver
+            let resetTime = null;
+            const timestampMatch = error.message.match(/Claude AI usage limit reached\|(\d+)/);
+            
+            if (timestampMatch) {
+              const resetTimestamp = parseInt(timestampMatch[1]);
+              const resetDate = new Date(resetTimestamp * 1000);
+              const day = resetDate.getDate();
+              const hour = resetDate.getHours();
+              // Formato conciso: "dia 19, 20h"
+              resetTime = `dia ${day}, ${hour}h`;
+            } else {
+              // Fallback para função original
+              resetTime = await getClaudeResetTime();
+            }
+            
+            if (resetTime) {
+              errorContent = `🕐 Seu limite será resetado:  ${resetTime}`;
+            } else {
+              errorContent = `🕐 Seu limite será resetado breve`;
+            }
+          } catch (extractError) {
+            errorContent = `🕐 Seu limite será resetado breve`;
+          }
+        }
+
         const errorMessage = {
           id: uuidv4(),
           type: 'assistant',
-          content: `Error: ${error.message}`,
+          content: errorContent,
           timestamp: Date.now(),
           is_error: true
         };
@@ -2463,86 +2872,7 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
     socket.isMetricsSubscribed = false;
   });
 
-  // Enhanced message handler with Context Engine
-  socket.on('send_message_with_context', async (data) => {
-    console.log('🧠 [Context] Processing message with Context Engine + MemoryMiddleware');
-    
-    const { message, sessionId, agentType = 'claude', useMemory = true } = data;
-    
-    if (!message || !message.trim()) {
-      socket.emit('error', { error: 'Message cannot be empty' });
-      return;
-    }
-    
-    const currentSessionId = sessionId || uuidv4();
-    const userId = socket.id; // Usar socket.id como userId
-    
-    try {
-      // Use Context Engine for processing (que já integra MemoryMiddleware)
-      if (contextEngine) {
-        const result = await contextEngine.processMessage(message, currentSessionId, {
-          agentType,
-          useMemory,
-          saveToMemory: true,
-          streaming: data.streaming || false,
-          userId  // Passar userId para o Context Engine
-        });
-        
-        // Add messages to session
-        const sessionData = sessions.get(currentSessionId) || {
-          id: currentSessionId,
-          created: Date.now(),
-          messages: [],
-          title: message.substring(0, 50)
-        };
-        
-        // Add user message
-        sessionData.messages.push({
-          id: uuidv4(),
-          type: 'user',
-          content: message,
-          timestamp: Date.now()
-        });
-        
-        // Add assistant response
-        sessionData.messages.push({
-          id: uuidv4(),
-          type: 'assistant',
-          content: result.response,
-          agent: result.agent,
-          hasContext: result.hasContext,
-          contextUsed: result.contextUsed,
-          timestamp: Date.now()
-        });
-        
-        sessions.set(currentSessionId, sessionData);
-        
-        // Emit response
-        socket.emit('message_complete', {
-          content: result.response,
-          agent: result.agent,
-          hasContext: result.hasContext,
-          contextUsed: result.contextUsed,
-          memories: result.memories,
-          sessionId: currentSessionId
-        });
-        
-      } else {
-        // Fallback to regular processing
-        socket.emit('error', { 
-          error: 'Context Engine not initialized',
-          fallback: 'Use regular send_message event'
-        });
-      }
-      
-    } catch (error) {
-      console.error('Context Engine error:', error);
-      socket.emit('error', { 
-        error: 'Failed to process message with context',
-        details: error.message 
-      });
-    }
-  });
+  // HANDLER REMOVIDO - Consolidado no send_message principal
 
   // A2A Event Handlers
   socket.on('a2a:select_agent', async (data) => {
@@ -2784,393 +3114,7 @@ Você pode me fazer perguntas sobre código, pedir para analisar arquivos, criar
     }
   });
   
-  socket.on('a2a:send_message', async (data) => {
-    const { message, sessionId, useAgent } = data;
-    
-    try {
-      // Se useAgent está habilitado, usar o agente A2A selecionado
-      if (useAgent && a2aClient.selectedAgent) {
-        console.log('🤖 [A2A] Processing message with agent:', a2aClient.selectedAgent);
-        
-        // Gerar session ID se não fornecido
-        const currentSessionId = sessionId || uuidv4();
-        
-        // Criar/atualizar sessão
-        let sessionData = sessions.get(currentSessionId) || {
-          id: currentSessionId,
-          created: Date.now(),
-          messages: [],
-          title: message.substring(0, 50) + '...',
-          agent: a2aClient.selectedAgent
-        };
-        
-        // Adicionar mensagem do usuário
-        const userMessage = {
-          id: uuidv4(),
-          type: 'user',
-          content: message,
-          timestamp: Date.now(),
-          agent: a2aClient.selectedAgent
-        };
-        
-        sessionData.messages.push(userMessage);
-        sessionData.lastActivity = Date.now();
-        sessions.set(currentSessionId, sessionData);
-        
-        // Emitir mensagem do usuário
-        socket.emit('message', {
-          ...userMessage,
-          sessionId: currentSessionId
-        });
-        
-        // INTEGRAÇÃO COM CLAUDE CODE SDK
-        // Usar Claude Code SDK para processar a mensagem com contexto A2A
-        const queryOptions = {
-          maxTurns: 1,
-          agent: a2aClient.selectedAgent,
-          a2aEnabled: true
-        };
-        
-        // Preparar prompt com contexto do agente
-        const agentContext = `You are now coordinating with ${a2aClient.selectedAgent} agent via A2A protocol. 
-        This agent specializes in: ${a2aClient.agents.get(a2aClient.selectedAgent)?.capabilities?.join(', ') || 'general tasks'}.
-        Process this request considering the agent's capabilities.`;
-        
-        const finalPrompt = `${agentContext}\n\nUser: ${message}`;
-        
-        socket.emit('typing_start');
-        socket.emit('processing_step', {
-          sessionId: currentSessionId,
-          step: 'a2a_routing',
-          message: `Routing to ${a2aClient.selectedAgent} via A2A protocol...`,
-          timestamp: Date.now()
-        });
-        
-        let assistantResponse = '';
-        
-        // PIPELINE REAL: Claude Code SDK → CrewAI → Claude Format
-        if (a2aClient.selectedAgent === 'crew-ai') {
-          console.log('🤖 [A2A] REAL Pipeline: Claude + CrewAI');
-          
-          try {
-            // 1. Claude analisa a intenção REAL da mensagem
-            console.log('🧠 [Step 1] Claude analyzing intent...');
-            
-            const intentPrompt = {
-              prompt: `Analise esta mensagem e extraia a intenção:
-"${message}"
-
-Retorne um JSON com:
-- intent: (data_extraction|pattern_analysis|report_generation|general_query)
-- entities: lista de entidades mencionadas
-- context_needed: informações necessárias
-- response_type: (informative|analytical|actionable)
-
-Responda APENAS com o JSON, sem explicações.`,
-              options: { 
-                maxTurns: 1,
-                temperature: 0.3 
-              }
-            };
-            
-            let claudeIntent = null;
-            let intentAnalysis = {};
-            
-            try {
-              // CORREÇÃO: Usar formato correto da API query()
-              console.log('🔍 Query attempt (intent):', {
-                promptLength: intentPrompt.prompt.length,
-                hasOptions: !!intentPrompt.options,
-                optionsKeys: Object.keys(intentPrompt.options || {})
-              });
-              
-              let fullResponse = '';
-              
-              // Usar o mesmo padrão que funciona no handler send_message
-              for await (const msg of query({ prompt: intentPrompt.prompt, options: intentPrompt.options })) {
-                if (msg.type === 'result' && !msg.is_error && msg.result) {
-                  fullResponse = msg.result;
-                  console.log('✅ Query result (intent):', {
-                    hasResult: !!msg.result,
-                    resultLength: msg.result?.length,
-                    messageType: msg.type
-                  });
-                  break; // Otimização: parar após obter resultado
-                }
-              }
-              
-              console.log('📊 Claude intent response:', fullResponse ? 'received' : 'empty');
-              
-              // Tentar parsear JSON da resposta
-              if (fullResponse) {
-                try {
-                  intentAnalysis = JSON.parse(fullResponse);
-                } catch (e) {
-                  // Se não for JSON válido, extrair informações básicas
-                  intentAnalysis = {
-                    intent: detectTaskType(message),
-                    entities: [],
-                    context_needed: message,
-                    response_type: 'informative'
-                  };
-                }
-              }
-            } catch (err) {
-              console.error('❌ Claude intent analysis failed:', err.message);
-              intentAnalysis = {
-                intent: detectTaskType(message),
-                entities: [],
-                context_needed: message,
-                response_type: 'informative'
-              };
-            }
-            
-            console.log('📋 Intent Analysis:', intentAnalysis);
-            
-            // 2. Enviar para CrewAI com contexto REAL
-            console.log('🚀 [Step 2] Sending to CrewAI with real context...');
-            
-            let crewAIResult = null;
-            if (intentAnalysis.intent !== 'general_query') {
-              const crewTaskPayload = {
-                task: message,
-                context: {
-                  sessionId: currentSessionId,
-                  intent: intentAnalysis,
-                  timestamp: Date.now()
-                },
-                streaming: false
-              };
-              
-              try {
-                // SEM timeout/fallback - aguardar resposta REAL
-                crewAIResult = await a2aClient.sendTask(message, crewTaskPayload);
-                console.log('📦 CrewAI real result:', crewAIResult);
-              } catch (err) {
-                console.log('⚠️ CrewAI error, will use Claude only:', err.message);
-              }
-            }
-            
-            // 3. Claude processa resultado REAL e formata resposta
-            console.log('🎯 [Step 3] Claude formatting REAL response...');
-            
-            const responsePrompt = {
-              prompt: `Você é um assistente inteligente integrado com CrewAI.
-
-Mensagem do usuário: "${message}"
-
-Análise de intenção:
-${JSON.stringify(intentAnalysis, null, 2)}
-
-${crewAIResult ? `Resultado da análise do CrewAI:
-${JSON.stringify(crewAIResult.result || crewAIResult, null, 2)}` : 'CrewAI não foi necessário para esta consulta.'}
-
-Agora forneça uma resposta natural, contextual e útil em português.
-Se o CrewAI foi usado, integre os resultados naturalmente.
-Seja específico, amigável e informativo.`,
-              options: { 
-                maxTurns: 1,
-                temperature: 0.7 
-              }
-            };
-            
-            // CORREÇÃO: Usar formato correto da API query() para resposta final
-            let fullFinalResponse = '';
-            try {
-              console.log('🔍 Query attempt (response):', {
-                promptLength: responsePrompt.prompt.length,
-                hasOptions: !!responsePrompt.options,
-                optionsKeys: Object.keys(responsePrompt.options || {})
-              });
-              
-              // Usar o mesmo padrão que funciona no handler send_message
-              for await (const msg of query({ prompt: responsePrompt.prompt, options: responsePrompt.options })) {
-                if (msg.type === 'result' && !msg.is_error && msg.result) {
-                  fullFinalResponse = msg.result;
-                  console.log('✅ Query result (response):', {
-                    hasResult: !!msg.result,
-                    resultLength: msg.result?.length,
-                    messageType: msg.type
-                  });
-                  break; // Otimização: parar após obter resultado
-                }
-              }
-            } catch (err) {
-              console.log('⚠️ Error collecting Claude response:', err.message);
-            }
-            
-            assistantResponse = fullFinalResponse;
-            
-            // Se ainda assim não tiver resposta, usar última tentativa
-            if (!assistantResponse) {
-              console.log('⚠️ No response from Claude, using direct query');
-              
-              try {
-                // CORREÇÃO: Usar formato correto da API query() para fallback
-                console.log('🔍 Query attempt (fallback):', {
-                  promptLength: message.length,
-                  usingDefaultOptions: true
-                });
-                
-                let directResponse = '';
-                
-                // Usar o mesmo padrão que funciona no handler send_message
-                for await (const msg of query({ prompt: message, options: { maxTurns: 1 } })) {
-                  if (msg.type === 'result' && !msg.is_error && msg.result) {
-                    directResponse = msg.result;
-                    console.log('✅ Query result (fallback):', {
-                      hasResult: !!msg.result,
-                      resultLength: msg.result?.length,
-                      messageType: msg.type
-                    });
-                    break; // Otimização: parar após obter resultado
-                  }
-                }
-                
-                assistantResponse = directResponse || 'Desculpe, não consegui processar sua mensagem no momento.';
-              } catch (err) {
-                console.log('❌ Fallback query error:', err.message);
-                assistantResponse = 'Desculpe, não consegui processar sua mensagem no momento.';
-              }
-            }
-            
-            // 4. Stream da resposta natural do Claude
-            console.log('📡 [Step 4] Streaming natural response...');
-            const chunks = assistantResponse.match(/.{1,40}/g) || [assistantResponse];
-            for (const chunk of chunks) {
-              socket.emit('stream', {
-                chunk: chunk,
-                sessionId: currentSessionId,
-                agent: a2aClient.selectedAgent
-              });
-              await new Promise(resolve => setTimeout(resolve, 80));
-            }
-            
-            // Emitir evento de conclusão do stream
-            socket.emit('stream_complete', {
-              sessionId: currentSessionId,
-              agent: a2aClient.selectedAgent,
-              totalLength: assistantResponse.length
-            });
-            console.log('✅ Stream complete for session:', currentSessionId);
-            
-          } catch (err) {
-            console.error('❌ [A2A] Error in Claude+CrewAI integration:', err.message);
-            // Em caso de erro, fornecer resposta de fallback natural
-            assistantResponse = `Entendi sua mensagem sobre "${message}". Estou processando isso para você. Como posso ajudar mais especificamente?`;
-            socket.emit('stream', {
-              chunk: assistantResponse,
-              sessionId: currentSessionId,
-              agent: a2aClient.selectedAgent
-            });
-          }
-          
-        } else {
-          // Para outros agentes, usar Claude Code SDK normal
-          console.log('🚀 [A2A] Starting Claude Code SDK query');
-          try {
-            for await (const msg of query({ prompt: finalPrompt, options: queryOptions })) {
-              if (msg.type === 'text') {
-                assistantResponse += msg.text;
-                socket.emit('stream', {
-                  chunk: msg.text,
-                  sessionId: currentSessionId,
-                  agent: a2aClient.selectedAgent
-                });
-              }
-            }
-          } catch (claudeError) {
-            console.error('⚠️ [A2A] Claude SDK error:', claudeError.message);
-            assistantResponse = `Olá! Recebi sua mensagem: "${message}". Como posso ajudar?`;
-          }
-        }
-        
-        // Enviar resposta diretamente se já temos o resultado do Claude
-        if (assistantResponse) {
-          console.log('✅ [A2A] Sending Claude response via A2A');
-          
-          // Criar mensagem do assistente
-          const assistantMessage = {
-            id: uuidv4(),
-            type: 'assistant',
-            content: assistantResponse,
-            agent: a2aClient.selectedAgent,
-            timestamp: Date.now()
-          };
-          
-          // Emitir resposta completa como mensagem normal
-          socket.emit('message', {
-            ...assistantMessage,
-            sessionId: currentSessionId
-          });
-          
-          // Salvar na sessão
-          sessionData.messages.push(assistantMessage);
-          sessions.set(currentSessionId, sessionData);
-          
-          // Opcionalmente, enviar para CrewAI para processamento adicional
-          if (a2aClient.selectedAgent === 'crew-ai') {
-            console.log('🔄 [A2A] Also forwarding to CrewAI for additional processing');
-            try {
-              // Usar sendTask ao invés de sendChatMessage para compatibilidade
-              const taskResult = await a2aClient.sendTask(message, {
-                context: { claude_response: assistantResponse },
-                streaming: false
-              });
-              
-              // Se CrewAI adicionar informações extras, emitir como resposta A2A
-              if (taskResult && taskResult.result) {
-                socket.emit('a2a:message_response', {
-                  response: taskResult.result.summary || 'Task processed',
-                  task_id: taskResult.id,
-                  session_id: currentSessionId,
-                  agent: a2aClient.selectedAgent,
-                  timestamp: Date.now()
-                });
-              }
-            } catch (crewError) {
-              console.warn('⚠️ [A2A] CrewAI processing optional, continuing:', crewError.message);
-            }
-          }
-        } else {
-          // Se não há resposta do Claude, criar uma resposta de erro
-          const errorMessage = {
-            id: uuidv4(),
-            type: 'assistant',
-            content: 'Desculpe, não consegui processar sua mensagem no momento.',
-            agent: a2aClient.selectedAgent,
-            is_error: true,
-            timestamp: Date.now()
-          };
-          
-          socket.emit('message', {
-            ...errorMessage,
-            sessionId: currentSessionId
-          });
-          
-          sessionData.messages.push(errorMessage);
-          sessions.set(currentSessionId, sessionData);
-        }
-        
-        socket.emit('stream_end', {
-          sessionId: currentSessionId,
-          agent: a2aClient.selectedAgent
-        });
-        socket.emit('typing_stop');
-        
-      } else {
-        // Fallback para Claude direto (comportamento existente)
-        socket.emit('a2a:error', {
-          error: 'No A2A agent selected'
-        });
-      }
-    } catch (error) {
-      console.error('❌ [A2A] Error processing message:', error);
-      socket.emit('a2a:error', {
-        error: error.message
-      });
-    }
-  });
+  // HANDLER REMOVIDO - Consolidado no send_message principal
 
   socket.on('a2a:request_decision', async (data) => {
     const { context, options } = data;

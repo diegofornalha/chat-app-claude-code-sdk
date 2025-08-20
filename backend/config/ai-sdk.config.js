@@ -4,16 +4,15 @@
  */
 
 const config = {
-  // Model configurations
+  // Model configurations - Claude Code SDK (no API key needed)
   models: {
-    default: 'sonnet-3.5',
-    available: ['sonnet-3.5', 'opus-3', 'haiku-3'],
+    default: 'claude-code-sdk',
+    available: ['claude-code-sdk'],
     providers: {
-      'claude-code': {
-        endpoint: process.env.CLAUDE_CODE_ENDPOINT,
-        apiKey: process.env.CLAUDE_CODE_API_KEY,
-        maxRetries: 3,
-        timeout: 30000
+      'claude-code-sdk': {
+        type: 'integrated',
+        authentication: 'built-in',
+        description: 'Claude Code SDK with integrated authentication'
       }
     }
   },

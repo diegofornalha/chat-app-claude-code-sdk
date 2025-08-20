@@ -1,12 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { io, Socket } from 'socket.io-client';
-import AgentSelector from './components/AgentSelector';
 import { ProcessingIndicator } from './components/ProcessingIndicator/ProcessingIndicator';
-import { UISettings } from './components/UISettings/UISettings';
-import { EnhancedMetrics } from './components/EnhancedMetrics/EnhancedMetrics';
+import { UISettings as UISettingsComponent } from './components/UISettings/UISettings';
+import SystemMetrics from './components/SystemMetrics/SystemMetrics';
+import { useMessageManager } from './hooks/useMessageManager';
+import { Message, Session, FileUploadResult, ChatSettings, UISettings, ConnectionStats } from './types';
+
+interface ProcessingStep {
+  sessionId: string;
+  step: string;
+  message: string;
+  data?: any;
+  timestamp: number;
+}
 
 // Anthropic-inspired color system
 const colors = {
@@ -131,59 +140,11 @@ const customSyntaxTheme = {
   'namespace': { color: colors.textTertiary },
 };
 
-interface Message {
-  id: string;
-  type: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-  cost?: number;
-  duration?: number;
-  turns?: number;
-  is_error?: boolean;
-  agent?: string;
-}
-
-interface Session {
-  id: string;
-  created: number;
-  lastActivity: number;
-  messageCount: number;
-  title: string;
-  messages?: Message[];
-}
-
-interface FileUploadResult {
-  success: boolean;
-  filename: string;
-  content: string;
-  size: number;
-  mimetype: string;
-}
-
-interface ChatSettings {
-  systemPrompt: string;
-  maxTurns: number;
-  allowedTools: string[];
-  streamingEnabled: boolean;
-}
-
-interface ConnectionStats {
-  active_connections: number;
-  active_sessions: number;
-}
-
-interface ProcessingStep {
-  sessionId: string;
-  step: string;
-  message: string;
-  data?: any;
-  timestamp: number;
-}
 
 const API_BASE = 'http://localhost:8080/api';
 
-// Reusable button component with consistent styling
-const HeaderButton = ({ 
+// Reusable button component with consistent styling - memoized
+const HeaderButton = React.memo(({ 
   children, 
   onClick, 
   active = false, 
@@ -257,10 +218,10 @@ const HeaderButton = ({
       {children}
     </button>
   );
-};
+});
 
-// Custom code block component with copy functionality
-const CodeBlock = ({ children, className, ...props }: any) => {
+// Custom code block component with copy functionality - memoized
+const CodeBlock = React.memo(({ children, className, ...props }: any) => {
   const [copied, setCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -313,10 +274,11 @@ const CodeBlock = ({ children, className, ...props }: any) => {
       {children}
     </code>
   );
-};
+});
 
-// Custom markdown components with Anthropic styling
-const MarkdownComponents = {
+const ClaudeChat = () => {
+  // Custom markdown components with Anthropic styling - memoized
+  const MarkdownComponents = useMemo(() => ({
   code: CodeBlock,
   pre: ({ children }: any) => <div>{children}</div>,
   h1: ({ children }: any) => (
@@ -417,24 +379,88 @@ const MarkdownComponents = {
       {children}
     </em>
   )
-};
-
-export default function ClaudeChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+}), []);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
   const [connected, setConnected] = useState<boolean | null>(null);
+  const [claudeStatus, setClaudeStatus] = useState<{
+    isLimitReached: boolean;
+    resetTime: string | null;
+    message: string | null;
+  }>({
+    isLimitReached: false,
+    resetTime: null,
+    message: null
+  });
   const [socket, setSocket] = useState<Socket | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentStreamingContent, setCurrentStreamingContent] = useState('');
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
+  
+  // Detectar limite do Claude - memoized
+  const claudeLimitCheck = useMemo(() => {
+    if (!currentStreamingContent) return null;
+    
+    const contentStr = typeof currentStreamingContent === 'string' 
+      ? currentStreamingContent 
+      : String(currentStreamingContent);
+    
+    const limitPatterns = [
+      'Claude Usage Limit Reached',
+      'Claude usage limit reached', 
+      'Claude AI usage limit reached',
+      'Seu limite será resetado: '
+    ];
+    
+    const isLimit = limitPatterns.some(pattern => contentStr.includes(pattern));
+    if (!isLimit) return null;
+    
+    const resetTimeMatch = contentStr.match(/resetado em:\s*([^\\n]+)/) || 
+                          contentStr.match(/reset at ([^.]+)/);
+    
+    return {
+      isLimitReached: true,
+      resetTime: resetTimeMatch ? resetTimeMatch[1].trim() : null,
+      message: contentStr
+    };
+  }, [currentStreamingContent]);
+  
+  useEffect(() => {
+    if (claudeLimitCheck && !claudeStatus.isLimitReached) {
+      setClaudeStatus(claudeLimitCheck);
+    }
+  }, [claudeLimitCheck, claudeStatus.isLimitReached]);
+  
+  const socketRef = useRef<Socket | null>(null);
+  
+  // Função utilitária para verificar limite do Claude
+  const checkClaudeLimit = useCallback((content: string) => {
+    const limitPatterns = [
+      'Claude usage limit reached',
+      'Claude AI usage limit reached', 
+      'Claude Usage Limit Reached',
+      'Seu limite será resetado: '
+    ];
+    
+    const isLimit = limitPatterns.some(pattern => content.includes(pattern));
+    if (!isLimit) return null;
+    
+    const resetTimeMatch = content.match(/resetado em:\s*([^\\n]+)/) || 
+                          content.match(/reset at ([^.]+)/);
+    
+    return {
+      isLimitReached: true,
+      resetTime: resetTimeMatch ? resetTimeMatch[1].trim() : null,
+      message: content
+    };
+  }, []);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showUISettings, setShowUISettings] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
-  const [showEnhancedMetrics, setShowEnhancedMetrics] = useState(false);
+  const [showSystemMetrics, setShowSystemMetrics] = useState(false);
   const [connectionStats, setConnectionStats] = useState<ConnectionStats>({ active_connections: 0, active_sessions: 0 });
   const [settings, setSettings] = useState<ChatSettings>({
     systemPrompt: '',
@@ -442,23 +468,63 @@ export default function ClaudeChat() {
     allowedTools: [],
     streamingEnabled: true
   });
-  const [uiSettings, setUiSettings] = useState({
-    showProcessingLogs: true,
-    showDetailedMetrics: true,
-    autoExpandLogs: true,
-    animationsEnabled: true,
-    compactMode: true,
-    // Novas opções de debug
-    showTimestamps: true,
-    showMessageIds: true,
-    showNetworkLatency: true,
-    showAgentVersions: true,
-    showTokenUsage: true,
-    enableConsoleLogs: true,
-    showSessionInfo: true,
-    showCostEstimates: true
-  });
+  // Carregar configurações do localStorage ou usar padrões
+  const loadUiSettings = (): UISettings => {
+    const savedSettings = localStorage.getItem('chatUiSettings');
+    if (savedSettings) {
+      try {
+        return JSON.parse(savedSettings);
+      } catch (e) {
+        console.error('Erro ao carregar configurações:', e);
+      }
+    }
+    return {
+      showProcessingLogs: true,
+      showDetailedMetrics: true,
+      autoExpandLogs: false,
+      animationsEnabled: true,
+      compactMode: true,
+      showTimestamps: true,
+      showMessageIds: true,
+      showNetworkLatency: true,
+      showAgentVersions: true,
+      showTokenUsage: true,
+      enableConsoleLogs: true,
+      showSessionInfo: true,
+      showCostEstimates: true,
+      enableAIConcierge: false,
+      enableStepByStep: false,
+      enableQuickActions: false,
+      enableCostTracking: false,
+      processingViewMode: 'compact' as 'minimize' | 'compact' | 'full' | 'hidden',
+      messageViewMode: 'standard' as 'minimal' | 'standard' | 'detailed' | 'developer'
+    };
+  };
+
+  const [uiSettings, setUiSettings] = useState<UISettings>(loadUiSettings());
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+
+  // Inicializar hook de gerenciamento de mensagens com deduplicação integrada
+  const messageManager = useMessageManager({
+    onMessageAdded: (message) => {
+      if (uiSettings.enableConsoleLogs) {
+        console.log('✅ [MESSAGE_MANAGER] Nova mensagem adicionada:', message.id);
+      }
+    },
+    onMessagesCleared: () => {
+      if (uiSettings.enableConsoleLogs) {
+        console.log('🧹 [MESSAGE_MANAGER] Mensagens limpas');
+      }
+    }
+  });
+
+  // Extrair mensagens e funções do manager
+  const { messages, addMessage, clearMessages } = messageManager;
+
+  // Salvar configurações quando mudarem
+  useEffect(() => {
+    localStorage.setItem('chatUiSettings', JSON.stringify(uiSettings));
+  }, [uiSettings]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -473,71 +539,58 @@ export default function ClaudeChat() {
   useEffect(() => {
     initializeSocket();
     return () => {
+      if (socketRef.current) {
+        // Remove todos os listeners antes de desconectar
+        socketRef.current.removeAllListeners();
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
       if (socket) {
+        socket.removeAllListeners();
         socket.disconnect();
       }
+      // Limpar cache de mensagens via messageManager quando desmontar
+      clearMessages();
     };
   }, []);
 
-  // Trace messages state changes
+  // Consolidated debug logging - only when enabled
   useEffect(() => {
-    if (uiSettings.enableConsoleLogs) {
-      console.log('🔄 [TRACE] Messages state updated:', {
-        messageCount: messages.length,
-        lastMessage: messages[messages.length - 1],
-        timestamp: new Date().toISOString()
-      });
-    }
-  }, [messages, uiSettings.enableConsoleLogs]);
+    if (!uiSettings.enableConsoleLogs) return;
+    
+    const debugData = {
+      messages: messages.length,
+      streamingContent: currentStreamingContent?.length || 0,
+      loading,
+      processingSteps: processingSteps.length
+    };
+    
+    console.log('🔄 [APP_STATE]', debugData);
+  }, [messages.length, currentStreamingContent?.length, loading, processingSteps.length, uiSettings.enableConsoleLogs]);
 
-  // Trace streaming content changes
-  useEffect(() => {
-    if (uiSettings.enableConsoleLogs) {
-      if (currentStreamingContent) {
-        const contentStr = typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent);
-        console.log('🌊 [TRACE] Streaming content updated:', {
-          contentLength: contentStr.length,
-          preview: contentStr.substring(0, 100) + '...',
-          timestamp: new Date().toISOString()
-        });
-      } else {
-        console.log('🛑 [TRACE] Streaming content cleared');
-      }
-    }
-  }, [currentStreamingContent, uiSettings.enableConsoleLogs]);
 
-  // Trace loading state changes
-  useEffect(() => {
-    if (uiSettings.enableConsoleLogs) {
-      console.log('⏳ [TRACE] Loading state changed:', {
-        loading: loading,
-        timestamp: new Date().toISOString()
-      });
+  const initializeSocket = useCallback(() => {
+    // Se já existe uma conexão, limpar antes de criar nova
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners();
+      socketRef.current.disconnect();
+      socketRef.current = null;
     }
-  }, [loading, uiSettings.enableConsoleLogs]);
-
-  // Trace processing steps changes
-  useEffect(() => {
-    if (uiSettings.enableConsoleLogs) {
-      console.log('🔄 [TRACE] Processing steps updated:', {
-        stepCount: processingSteps.length,
-        steps: processingSteps.map(s => ({ step: s.step, message: s.message })),
-        timestamp: new Date().toISOString()
-      });
+    if (socket) {
+      socket.removeAllListeners();
+      socket.disconnect();
     }
-  }, [processingSteps, uiSettings.enableConsoleLogs]);
-
-  const initializeSocket = () => {
+    
     const newSocket = io('http://localhost:8080');
     
     newSocket.on('connect', () => {
-      console.log('🔗 [TRACE] Connected to server');
+      if (uiSettings.enableConsoleLogs) console.log('🔗 Connected to server');
       setConnected(true);
       checkHealth();
     });
     
     newSocket.on('disconnect', () => {
-      console.log('Disconnected from server');
+      if (uiSettings.enableConsoleLogs) console.log('Disconnected from server');
       setConnected(false);
     });
     
@@ -546,150 +599,115 @@ export default function ClaudeChat() {
     });
     
     newSocket.on('message', (message: Message & { sessionId: string }) => {
-      console.log('📥 [TRACE] Received message event:', {
-        messageId: message.id,
-        type: message.type,
-        contentLength: message.content?.length,
-        sessionId: message.sessionId,
-        timestamp: new Date().toISOString()
-      });
+      if (uiSettings.enableConsoleLogs) {
+        console.log('📥 Message received:', message.id);
+      }
       
-      setMessages(prev => [...prev, message]);
-      setSessionId(message.sessionId);
+      addMessage(message);
+      
+      if (message.sessionId) {
+        setSessionId(message.sessionId);
+      }
     });
     
     newSocket.on('message_stream', (data: { sessionId: string; content: string; fullContent: string }) => {
-      console.log('🌊 [TRACE] Received message_stream event:', {
-        sessionId: data.sessionId,
-        contentLength: typeof data.content === 'string' ? data.content.length : 0,
-        fullContentLength: typeof data.fullContent === 'string' ? data.fullContent.length : 0,
-        timestamp: new Date().toISOString()
-      });
+      if (uiSettings.enableConsoleLogs) {
+        console.log('🌊 Stream received:', data.fullContent.length);
+      }
       
       setCurrentStreamingContent(data.fullContent);
     });
     
     newSocket.on('message_complete', (message: Message & { sessionId: string }) => {
-      console.log('✅ [TRACE] Received message_complete event:', {
-        messageId: message.id,
-        contentLength: typeof message.content === 'string' ? message.content.length : 0,
-        sessionId: message.sessionId,
-        cost: message.cost,
-        duration: message.duration,
-        turns: message.turns,
-        timestamp: new Date().toISOString()
-      });
+      if (uiSettings.enableConsoleLogs) {
+        console.log('✅ Message complete:', message.id);
+      }
       
       setCurrentStreamingContent('');
       setLoading(false);
-      setMessages(prev => {
-        console.log('🔄 [TRACE] Updating messages state with complete message');
-        // Replace any partial streaming message with the complete one
-        const filtered = prev.filter(m => m.type !== 'assistant' || !(typeof m.content === 'string' ? m.content.includes('...') : false));
-        return [...filtered, message];
-      });
-      setSessionId(message.sessionId);
+      addMessage(message);
+      
+      if (message.sessionId) {
+        setSessionId(message.sessionId);
+      }
     });
     
     
     newSocket.on('error', (error: any) => {
-      console.error('❌ [TRACE] Socket error received:', {
-        error: error.error,
-        details: error.details,
-        sessionId: error.sessionId,
-        timestamp: new Date().toISOString()
-      });
+      if (uiSettings.enableConsoleLogs) {
+        console.error('❌ Socket error:', error.error || error.message || 'Unknown error');
+      }
       
       setLoading(false);
       setCurrentStreamingContent('');
       
-      // Garantir que error seja sempre uma string
-      let errorContent = 'Unknown error';
-      if (error.content && typeof error.content === 'string') {
-        errorContent = error.content;
-      } else if (error.error && typeof error.error === 'string') {
-        errorContent = error.error;
-      } else if (error.details && typeof error.details === 'string') {
-        errorContent = error.details;
-      } else if (error.message && typeof error.message === 'string') {
-        errorContent = error.message;
-      } else if (typeof error === 'string') {
-        errorContent = error;
-      } else {
-        // Se for um objeto, tentar extrair uma mensagem útil
-        errorContent = 'Desculpe, não consegui processar sua solicitação corretamente. Por favor, tente novamente.';
+      // Extrair mensagem de erro de forma mais limpa
+      const errorContent = error.content || error.error || error.details || 
+                          error.message || (typeof error === 'string' ? error : 
+                          'Desculpe, não consegui processar sua solicitação corretamente. Por favor, tente novamente.');
+      
+      // Verificar limite do Claude de forma consolidada
+      const claudeLimit = checkClaudeLimit(errorContent);
+      if (claudeLimit) {
+        setClaudeStatus(claudeLimit);
       }
       
+      // Criar mensagem de erro
       const errorMessage: Message = {
-        id: error.id || Date.now().toString(),
+        id: error.id || `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'assistant',
         content: errorContent,
         timestamp: error.timestamp || Date.now(),
         is_error: true
       };
       
-      console.log('📝 [TRACE] Adding error message to state:', errorMessage);
-      setMessages(prev => [...prev, errorMessage]);
+      addMessage(errorMessage);
     });
     
     newSocket.on('session_created', (session: Session) => {
+      if (uiSettings.enableConsoleLogs) console.log('🆕 Session created:', session.id);
+      
       setSessionId(session.id);
       setSessions(prev => [session, ...prev]);
     });
     
     newSocket.on('session_loaded', (session: Session) => {
       if (session.messages) {
-        setMessages(session.messages);
+        messageManager.setAllMessages(session.messages);
         setSessionId(session.id);
       }
     });
     
-    // Adicionar listener para sessões deletadas
+    // Listener para sessões deletadas
     newSocket.on('session_deleted', (data: { success: boolean; sessionId: string; remainingSessions?: number; timestamp?: number }) => {
-      console.log('🗑️ [SESSIONS] Session deleted event received:', {
-        success: data.success,
-        sessionId: data.sessionId?.slice(0, 8),
-        remainingSessions: data.remainingSessions,
-        timestamp: data.timestamp
-      });
+      if (uiSettings.enableConsoleLogs) console.log('🗑️ Session deleted:', data.sessionId?.slice(0, 8));
       
       if (data.success) {
-        // Remover a sessão da lista local imediatamente
         setSessions(prevSessions => prevSessions.filter(s => s.id !== data.sessionId));
         
-        // Se a sessão deletada era a atual, limpar a interface
         if (sessionId === data.sessionId) {
           setSessionId('');
-          setMessages([]);
+          clearMessages();
         }
       }
     });
     
-    // Listener para atualizações da lista de sessões (broadcast para todos os clientes)
+    // Listener para atualizações da lista de sessões
     newSocket.on('session_list_updated', (data: { action: string; sessionId: string; remainingSessions: number; timestamp: number }) => {
-      console.log('📋 [SESSIONS] Session list update received:', {
-        action: data.action,
-        sessionId: data.sessionId?.slice(0, 8),
-        remainingSessions: data.remainingSessions,
-        timestamp: data.timestamp
-      });
+      if (uiSettings.enableConsoleLogs) console.log('📋 Session list updated:', data.action);
       
       if (data.action === 'session_deleted') {
-        // Recarregar a lista de sessões para todos os clientes
-        setTimeout(() => {
-          loadSessions();
-        }, 100); // Pequeno delay para garantir que o servidor processou a exclusão
+        setTimeout(loadSessions, 100);
         
-        // Se a sessão deletada era a atual, limpar a interface
         if (sessionId === data.sessionId) {
           setSessionId('');
-          setMessages([]);
+          clearMessages();
         }
       }
     });
 
     newSocket.on('processing_step', (step: ProcessingStep) => {
-      console.log('🔄 [TRACE] Received processing step:', step);
+      if (uiSettings.enableConsoleLogs) console.log('🔄 Processing step:', step.step);
       setProcessingSteps(prev => [...prev, step]);
     });
 
@@ -705,49 +723,47 @@ export default function ClaudeChat() {
 
     // A2A Event Listeners
     newSocket.on('a2a:message_response', (data: any) => {
-      console.log('🤖 [A2A] Message response received:', data);
+      if (uiSettings.enableConsoleLogs) console.log('🤖 A2A response received');
       
       const assistantMessage: Message = {
-        id: Date.now().toString(),
+        id: `assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'assistant',
         content: data.response,
         timestamp: Date.now(),
         agent: data.agent
       };
       
-      setMessages(prev => [...prev, assistantMessage]);
-      setLoading(false);
+      addMessage(assistantMessage);
     });
 
     newSocket.on('a2a:stream', (data: any) => {
-      console.log('🌊 [A2A] Stream data:', data);
+      if (uiSettings.enableConsoleLogs) console.log('🌊 A2A stream data');
       setCurrentStreamingContent(prev => prev + data.content);
     });
 
     newSocket.on('a2a:task_complete', (data: any) => {
-      console.log('✅ [A2A] Task complete:', data);
-      setLoading(false);
+      if (uiSettings.enableConsoleLogs) console.log('✅ A2A task complete');
     });
 
     newSocket.on('a2a:error', (data: any) => {
-      console.error('❌ [A2A] Error:', data);
+      if (uiSettings.enableConsoleLogs) console.error('❌ A2A Error:', data);
       
       const errorMessage: Message = {
-        id: Date.now().toString(),
+        id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'assistant',
         content: `A2A Error: ${data.error}`,
         timestamp: Date.now(),
         is_error: true
       };
       
-      setMessages(prev => [...prev, errorMessage]);
-      setLoading(false);
+      addMessage(errorMessage);
     });
     
     setSocket(newSocket);
-  };
+    socketRef.current = newSocket;
+  }, [addMessage, clearMessages, sessionId, uiSettings.enableConsoleLogs, checkClaudeLimit]);
 
-  const checkHealth = async () => {
+  const checkHealth = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/health`);
       const data = await response.json();
@@ -759,72 +775,69 @@ export default function ClaudeChat() {
         });
       }
     } catch (error) {
-      console.error('Health check failed:', error);
+      if (uiSettings.enableConsoleLogs) console.error('Health check failed:', error);
       setConnected(false);
     }
-  };
+  }, [uiSettings.enableConsoleLogs]);
 
-  const handleAgentSelect = (agent: string | null) => {
+
+
+  const handleAgentSelect = useCallback((agent: string | null) => {
     setSelectedAgent(agent);
-    console.log('🤖 [TRACE] Agent selected:', agent || 'Claude Direct');
-  };
+    if (uiSettings.enableConsoleLogs) console.log('🤖 Agent selected:', agent || 'Claude Direct');
+  }, [uiSettings.enableConsoleLogs]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading || !socket) {
-      console.log('⚠️ [TRACE] Send message blocked:', {
-        hasInput: !!input.trim(),
-        loading: loading,
-        hasSocket: !!socket
-      });
+  const sendMessage = useCallback(async () => {
+    if (!input.trim() || !socket || !sessionId) {
+      if (uiSettings.enableConsoleLogs && !sessionId) {
+        console.error('SessionId not defined');
+      }
+      if (!sessionId) alert('Sessão não inicializada. Por favor, recarregue a página.');
       return;
     }
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: input.trim(),
-      timestamp: Date.now(),
-    };
-
-    console.log('📤 [TRACE] Sending message via socket:', {
-      messageId: userMessage.id,
-      contentLength: typeof userMessage.content === 'string' ? userMessage.content.length : 0,
-      selectedAgent: selectedAgent,
-      sessionId: sessionId,
-      timestamp: new Date().toISOString()
-    });
-
-    setInput('');
-    setLoading(true);
-    setCurrentStreamingContent('');
-
-    // Send message via socket - usar A2A se um agente estiver selecionado
-    if (selectedAgent) {
-      socket.emit('a2a:send_message', {
-        message: userMessage.content,
-        sessionId: sessionId,
-        useAgent: true
-      });
-    } else {
-      socket.emit('send_message', {
-        message: userMessage.content,
-        sessionId: sessionId,
-        systemPrompt: settings.systemPrompt || undefined,
-        maxTurns: settings.maxTurns,
-        allowedTools: settings.allowedTools,
-      });
+    const messageId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const messageContent = input.trim();
+    
+    if (uiSettings.enableConsoleLogs) {
+      console.log('📤 Sending message:', messageId);
     }
-  };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+    try {
+      const messageData = {
+        message: messageContent,
+        content: messageContent,
+        sessionId,
+        messageId,
+        agent: selectedAgent,
+        useAgent: !!selectedAgent
+      };
+
+      if (selectedAgent) {
+        socket.emit('a2a:send_message', messageData);
+      } else {
+        socket.emit('send_message', messageData);
+      }
+      
+      setInput('');
+      setLoading(true);
+      setCurrentStreamingContent('');
+      
+    } catch (error) {
+      if (uiSettings.enableConsoleLogs) console.error('Send error:', error);
+      setLoading(false);
+    }
+  }, [input, socket, sessionId, selectedAgent, uiSettings.enableConsoleLogs]);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
-  };
+  }, [sendMessage]);
 
-  const clearChat = () => {
-    setMessages([]);
+  const clearChat = useCallback(() => {
+    clearMessages();
     setSessionId('');
     setCurrentStreamingContent('');
     setLoading(false);
@@ -832,16 +845,16 @@ export default function ClaudeChat() {
     if (socket) {
       socket.emit('create_session');
     }
-  };
+  }, [clearMessages, socket]);
 
-  const loadSession = (session: Session) => {
+  const loadSession = useCallback((session: Session) => {
     if (socket) {
       socket.emit('load_session', session.id);
       setShowSidebar(false);
     }
-  };
+  }, [socket]);
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       console.log('📋 [SESSIONS] Loading sessions from server...');
       
@@ -872,7 +885,7 @@ export default function ClaudeChat() {
     } catch (error) {
       console.error('📋 [SESSIONS] Failed to load sessions:', error);
     }
-  };
+  }, []);
 
   const exportConversation = async (format: 'markdown' | 'json' = 'markdown') => {
     try {
@@ -906,7 +919,7 @@ export default function ClaudeChat() {
     formData.append('file', file);
 
     try {
-      setLoading(true);
+      // Não setamos loading=true pois agora usamos a fila
       const response = await fetch(`${API_BASE}/upload`, {
         method: 'POST',
         body: formData
@@ -915,12 +928,15 @@ export default function ClaudeChat() {
       const result: FileUploadResult = await response.json();
       
       if (result.success) {
-        // Trigger file analysis
-        socket.emit('analyze_file', {
-          content: result.content,
-          filename: result.filename,
-          prompt: 'Please analyze this file and provide insights about its structure, purpose, and any potential improvements.'
-        });
+        // Enviar análise de arquivo diretamente
+        const analysisPrompt = `Please analyze this file (${result.filename}) and provide insights about its structure, purpose, and any potential improvements.\n\nFile content:\n${result.content}`;
+        
+        // Simular envio de mensagem como se fosse digitada pelo usuário
+        setInput(analysisPrompt);
+        setTimeout(() => {
+          sendMessage();
+        }, 100);
+        
         setShowFileUpload(false);
       } else {
         console.error('File upload failed:', result);
@@ -928,28 +944,20 @@ export default function ClaudeChat() {
     } catch (error) {
       console.error('File upload error:', error);
     } finally {
-      setLoading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
   };
 
-  const formatMetadata = (message: Message) => {
+  const formatMetadata = useCallback((message: Message) => {
     const parts = [];
     
-    // Adicionar informações baseadas nas configurações
-    if (uiSettings.showTokenUsage) {
-      // Simular token usage (em produção viria do backend)
-      const estimatedTokens = Math.floor(getMessageContent(message.content).length / 4);
-      parts.push(`~${estimatedTokens} tokens`);
-    }
-    
-    if (uiSettings.showCostEstimates && message.cost !== undefined) {
+    if (message.cost !== undefined) {
       parts.push(`$${message.cost.toFixed(4)}`);
     }
     
-    if (uiSettings.showNetworkLatency && message.duration !== undefined) {
+    if (message.duration !== undefined) {
       parts.push(`${message.duration.toFixed(0)}ms`);
     }
     
@@ -957,96 +965,58 @@ export default function ClaudeChat() {
       parts.push(`${message.turns} turns`);
     }
     
-    if (uiSettings.showSessionInfo && sessionId) {
+    if (sessionId) {
       parts.push(`Session: ${sessionId.substring(0, 8)}`);
     }
     
     return parts.length > 0 ? parts.join(' • ') : '';
-  };
+  }, [sessionId]);
 
-  const formatTimestamp = (timestamp: number) => {
+  const formatTimestamp = useCallback((timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString();
-  };
+  }, []);
 
-  // Helper function to safely convert message content to string
-  const getMessageContent = (content: any): string => {
-    // Se já é string, retorna direto
-    if (typeof content === 'string') {
-      return content;
-    }
+  // Helper function to safely convert message content to string - optimized
+  const getMessageContent = useCallback((content: any): string => {
+    if (typeof content === 'string') return content;
+    if (content === null || content === undefined) return '';
     
-    // Se é null ou undefined, retorna vazio
-    if (content === null || content === undefined) {
-      return '';
-    }
-    
-    // Se é objeto, tenta extrair o conteúdo
     if (typeof content === 'object') {
-      // Ordem de prioridade para campos comuns
-      // 1. Campos de erro
-      if (content.error) {
-        // Se error também é objeto, tenta extrair mensagem dele
-        if (typeof content.error === 'object' && content.error.message) {
-          return content.error.message;
+      // Priority order for common fields
+      const fields = ['error', 'message', 'content', 'text', 'response', 'details', 'result'];
+      
+      for (const field of fields) {
+        if (content[field]) {
+          const value = content[field];
+          if (typeof value === 'object' && value.message) {
+            return String(value.message);
+          }
+          if (field === 'content') {
+            return getMessageContent(value); // Recursive for nested content
+          }
+          return String(value);
         }
-        return String(content.error);
       }
       
-      // 2. Campo message
-      if (content.message) {
-        return String(content.message);
-      }
-      
-      // 3. Campo content (objetos aninhados)
-      if (content.content) {
-        return getMessageContent(content.content); // Recursão para objetos aninhados
-      }
-      
-      // 4. Campo text
-      if (content.text) {
-        return String(content.text);
-      }
-      
-      // 5. Campo response (para respostas de API)
-      if (content.response) {
-        return String(content.response);
-      }
-      
-      // 6. Campo details (para mensagens de erro detalhadas)
-      if (content.details) {
-        return String(content.details);
-      }
-      
-      // 7. Campo result (para resultados de operações)
-      if (content.result) {
-        return String(content.result);
-      }
-      
-      // 8. Se é um array, junta os elementos
+      // Handle arrays
       if (Array.isArray(content)) {
         return content.map(item => getMessageContent(item)).filter(Boolean).join('\n');
       }
       
-      // 9. Tenta JSON.stringify para objetos complexos (útil para debug)
+      // Last resort - JSON for small objects
       try {
         const jsonStr = JSON.stringify(content, null, 2);
-        // Só retorna JSON se não for muito grande
-        if (jsonStr.length < 1000) {
-          console.warn('Complex object in message content, displaying as JSON:', content);
-          return jsonStr;
-        }
-      } catch (e) {
-        // Se falhar o stringify, continua
-      }
+        if (jsonStr.length < 500) return jsonStr;
+      } catch {}
       
-      // 10. Último recurso - avisa e retorna vazio
-      console.warn('Unable to extract string from message content:', content);
+      if (uiSettings.enableConsoleLogs) {
+        console.warn('Complex message content:', typeof content);
+      }
       return '';
     }
     
-    // Para outros tipos (number, boolean, etc), converte para string
     return String(content);
-  };
+  }, [uiSettings.enableConsoleLogs]);
 
   useEffect(() => {
     if (showSidebar) {
@@ -1070,21 +1040,27 @@ export default function ClaudeChat() {
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>Claude Code Chat</h1>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" 
+                 title={claudeStatus.isLimitReached && claudeStatus.message ? claudeStatus.message : undefined}>
               <div className={`w-2 h-2 rounded-full shadow-sm`} style={{
                 backgroundColor: connected === null ? colors.statusWarning : 
-                                connected ? colors.statusSuccess : colors.statusError
+                                connected ? colors.statusSuccess : 
+                                claudeStatus.isLimitReached ? '#FFA500' : colors.statusError
               }}></div>
-              <span className="text-sm font-medium" style={{ color: colors.textSecondary }}>
+              <span className="text-sm font-medium" style={{ 
+                color: claudeStatus.isLimitReached ? '#D97706' : colors.textSecondary,
+                fontWeight: claudeStatus.isLimitReached ? '600' : 'normal'
+              }}>
                 {connected === null ? 'Checking...' : 
-                 connected ? 'Connected' : 'Disconnected'}
+                 connected ? 'Connected' : 
+                 claudeStatus.isLimitReached && claudeStatus.resetTime ? 
+                   `⏰ Claude Limit - Reset às ${claudeStatus.resetTime}` : 
+                 claudeStatus.isLimitReached ? 
+                   '⏰ Claude Usage Limit Reached' : 
+                   'Disconnected'}
               </span>
             </div>
-            <AgentSelector 
-              socket={socket}
-              onAgentSelect={handleAgentSelect}
-              selectedAgent={selectedAgent}
-            />
+            {/* AgentSelector temporariamente removido */}
             <HeaderButton
               onClick={() => setShowSidebar(!showSidebar)}
               active={showSidebar}
@@ -1104,8 +1080,8 @@ export default function ClaudeChat() {
               UI Config
             </HeaderButton>
             <HeaderButton
-              onClick={() => setShowEnhancedMetrics(!showEnhancedMetrics)}
-              active={showEnhancedMetrics}
+              onClick={() => setShowSystemMetrics(!showSystemMetrics)}
+              active={showSystemMetrics}
               variant="success"
             >
               📊 Metrics
@@ -1236,7 +1212,7 @@ export default function ClaudeChat() {
                             if (sessionId === session.id) {
                               console.log('🗑️ [SESSIONS] Clearing active session interface');
                               setSessionId('');
-                              setMessages([]);
+                              clearMessages();
                             }
                           } else {
                             console.error('🗑️ [SESSIONS] No socket connection available for deletion');
@@ -1461,7 +1437,7 @@ export default function ClaudeChat() {
                       borderRightColor: colors.accent
                     }}></div>
                     <span className="text-sm font-medium" style={{ color: colors.accent }}>
-                      Uploading and analyzing file...
+                      Processing file...
                     </span>
                   </div>
                 </div>
@@ -1471,10 +1447,10 @@ export default function ClaudeChat() {
         </div>
       )}
 
-      {/* Enhanced Metrics Panel */}
-      {showEnhancedMetrics && (
+      {/* System Metrics Panel */}
+      {showSystemMetrics && (
         <div className="border-b" style={{ borderColor: colors.border }}>
-          <EnhancedMetrics
+          <SystemMetrics
             serverUrl="http://localhost:8080"
             showDetailedMetrics={uiSettings.showDetailedMetrics}
           />
@@ -1526,7 +1502,7 @@ export default function ClaudeChat() {
                     : `0 1px 3px ${colors.overlayLight}`
                 }}
               >
-                {/* Header com informações extras baseadas nas configurações */}
+                {/* Header com informações básicas */}
                 {message.timestamp && (
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -1535,49 +1511,28 @@ export default function ClaudeChat() {
                       }}>
                         {message.type === 'user' ? 'Você' : `Claude ${message.agent ? `(${message.agent})` : ''}`}
                       </span>
-                      {uiSettings.showMessageIds && (
-                        <span className="text-xs opacity-50" style={{ 
-                          color: message.type === 'user' ? colors.surface : colors.textTertiary,
-                          fontFamily: 'monospace'
-                        }}>
-                          #{message.id.substring(0, 8)}
-                        </span>
-                      )}
-                      {uiSettings.showAgentVersions && message.agent && (
-                        <span className="text-xs opacity-50" style={{ 
-                          color: message.type === 'user' ? colors.surface : colors.textTertiary
-                        }}>
-                          v1.0
-                        </span>
-                      )}
+                      <span className="text-xs opacity-50" style={{ 
+                        color: message.type === 'user' ? colors.surface : colors.textTertiary,
+                        fontFamily: 'monospace'
+                      }}>
+                        #{message.id.substring(0, 8)}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {uiSettings.showNetworkLatency && message.duration && (
+                      {message.duration && (
                         <span className="text-xs opacity-50" style={{ 
                           color: message.type === 'user' ? colors.surface : colors.textTertiary
                         }}>
                           ⚡ {message.duration}ms
                         </span>
                       )}
-                      {uiSettings.showCostEstimates && message.cost && (
+                      {message.cost && (
                         <span className="text-xs opacity-50" style={{ 
                           color: message.type === 'user' ? colors.surface : colors.textTertiary
                         }}>
                           💰 ${message.cost.toFixed(4)}
                         </span>
                       )}
-                      <span className="text-xs opacity-60" style={{ 
-                        color: message.type === 'user' ? colors.surface : colors.textTertiary 
-                      }}>
-                        {uiSettings.showTimestamps 
-                          ? new Date(message.timestamp).toLocaleString('pt-BR', { 
-                              hour: '2-digit', 
-                              minute: '2-digit', 
-                              second: '2-digit',
-                              fractionalSecondDigits: 3
-                            }).replace(',', '.')
-                          : formatTimestamp(message.timestamp)}
-                      </span>
                     </div>
                   </div>
                 )}
@@ -1655,13 +1610,14 @@ export default function ClaudeChat() {
           })}
           
           {/* Processing Steps Display - Controlado por configurações do usuário */}
-          {processingSteps.length > 0 && (
+          {processingSteps.length > 0 && uiSettings.processingViewMode !== 'hidden' && (
             <div className="flex justify-start">
               <ProcessingIndicator
                 steps={processingSteps}
                 showDetails={uiSettings.showProcessingLogs}
                 autoExpand={uiSettings.autoExpandLogs}
                 animationsEnabled={uiSettings.animationsEnabled}
+                viewMode={uiSettings.processingViewMode}
               />
             </div>
           )}
@@ -1690,16 +1646,28 @@ export default function ClaudeChat() {
                 >
                   {typeof currentStreamingContent === 'string' ? currentStreamingContent : String(currentStreamingContent || '')}
                 </ReactMarkdown>
-                <div className="flex items-center mt-3 pt-2 border-t" style={{ borderTopColor: colors.borderLight }}>
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent }}></div>
-                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent, animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent, animationDelay: '0.4s' }}></div>
+                {/* Não mostrar typing indicator se há limite do Claude */}
+                {!claudeStatus.isLimitReached && (
+                  <div className="flex items-center mt-3 pt-2 border-t" style={{ borderTopColor: colors.borderLight }}>
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent }}></div>
+                      <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent, animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent, animationDelay: '0.4s' }}></div>
+                    </div>
+                    <span className="text-xs ml-3 font-medium" style={{ color: colors.accent }}>
+                      Claude is typing...
+                    </span>
                   </div>
-                  <span className="text-xs ml-3 font-medium" style={{ color: colors.accent }}>
-                    Claude is typing...
-                  </span>
-                </div>
+                )}
+                
+                {/* Não mostrar informação de reset no rodapé se já tem no conteúdo principal */}
+                {claudeStatus.isLimitReached && claudeStatus.resetTime && !currentStreamingContent.includes('Seu limite será resetado: ') && (
+                  <div className="flex items-center mt-3 pt-2 border-t" style={{ borderTopColor: colors.borderLight }}>
+                    <span className="text-xs font-medium" style={{ color: '#D97706' }}>
+                      🕐 Seu limite será resetado:  {claudeStatus.resetTime}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             );
@@ -1718,7 +1686,9 @@ export default function ClaudeChat() {
                     <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.warning, animationDelay: '0.2s' }}></div>
                     <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.warning, animationDelay: '0.4s' }}></div>
                   </div>
-                  <span className="text-sm font-medium" style={{ color: colors.textSecondary }}>Claude is thinking...</span>
+                  <span className="text-sm font-medium" style={{ color: colors.textSecondary }}>
+                    Claude is processing...
+                  </span>
                 </div>
               </div>
             </div>
@@ -1755,44 +1725,44 @@ export default function ClaudeChat() {
                 e.currentTarget.style.backgroundColor = colors.surfaceSecondary;
               }}
               rows={1}
-              disabled={loading || connected === false}
+              disabled={connected === false} // Removido loading para permitir múltiplas mensagens
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim() || loading || connected === false}
+              disabled={!input.trim() || connected === false || loading}
               className="px-6 py-3 rounded-xl transition-all duration-200 font-semibold focus:outline-none min-w-[80px]"
               style={{ 
-                backgroundColor: !input.trim() || loading || connected === false 
+                backgroundColor: !input.trim() || connected === false 
                   ? colors.disabled 
                   : colors.success,
                 color: colors.surface,
-                cursor: !input.trim() || loading || connected === false ? 'not-allowed' : 'pointer',
-                boxShadow: !input.trim() || loading || connected === false 
+                cursor: !input.trim() || connected === false ? 'not-allowed' : 'pointer',
+                boxShadow: !input.trim() || connected === false 
                   ? 'none' 
                   : `0 2px 4px ${colors.overlayLight}`
               }}
               onMouseEnter={(e) => {
-                if (input.trim() && !loading && connected !== false) {
+                if (input.trim() && connected !== false) {
                   e.currentTarget.style.backgroundColor = colors.successHover;
                   e.currentTarget.style.transform = 'translateY(-1px)';
                   e.currentTarget.style.boxShadow = `0 4px 8px ${colors.overlayLight}`;
                 }
               }}
               onMouseLeave={(e) => {
-                if (input.trim() && !loading && connected !== false) {
+                if (input.trim() && connected !== false) {
                   e.currentTarget.style.backgroundColor = colors.success;
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = `0 2px 4px ${colors.overlayLight}`;
                 }
               }}
               onFocus={(e) => {
-                if (input.trim() && !loading && connected !== false) {
+                if (input.trim() && connected !== false) {
                   e.currentTarget.style.outline = 'none';
                   e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.successLight}`;
                 }
               }}
               onBlur={(e) => {
-                if (input.trim() && !loading && connected !== false) {
+                if (input.trim() && connected !== false) {
                   e.currentTarget.style.boxShadow = `0 2px 4px ${colors.overlayLight}`;
                 }
               }}
@@ -1811,12 +1781,22 @@ export default function ClaudeChat() {
 
       {/* UI Settings Modal */}
       {showUISettings && (
-        <UISettings
+        <UISettingsComponent
           settings={uiSettings}
-          onSettingsChange={(newSettings) => setUiSettings(prev => ({ ...prev, ...newSettings }))}
+          onSettingsChange={(newSettings) => {
+            setUiSettings((prev: UISettings) => {
+              const updated = { ...prev, ...newSettings };
+              // Salvar imediatamente no localStorage
+              localStorage.setItem('chatUiSettings', JSON.stringify(updated));
+              return updated;
+            });
+          }}
           onClose={() => setShowUISettings(false)}
         />
       )}
+
     </div>
   );
-}
+};
+
+export default React.memo(ClaudeChat);

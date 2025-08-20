@@ -57,11 +57,10 @@ npm install
 3. Configure as variáveis de ambiente:
 ```bash
 # backend/.env
-ANTHROPIC_API_KEY=sua-api-key
 PORT=8080
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=sua-senha
+NEO4J_PASSWORD=password
 ```
 
 4. Execute o projeto:

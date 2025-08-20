@@ -16,6 +16,8 @@ interface UISettingsProps {
     enableConsoleLogs: boolean;
     showSessionInfo: boolean;
     showCostEstimates: boolean;
+    processingViewMode?: 'minimize' | 'compact' | 'full' | 'hidden';
+    messageViewMode?: 'minimal' | 'standard' | 'detailed' | 'developer';
   };
   onSettingsChange: (settings: any) => void;
   onClose: () => void;
@@ -41,9 +43,76 @@ export const UISettings: React.FC<UISettingsProps> = ({
         </div>
         
         <div className="ui-settings-content">
+          {/* Seção Modos de Visualização */}
+          <div className="ui-settings-section">
+            <h3>🎨 MODOS DE VISUALIZAÇÃO</h3>
+            
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="processingViewMode">
+                  Modo de Processamento
+                </label>
+                <p className="ui-setting-description">
+                  Como exibir indicadores de processamento e logs
+                </p>
+              </div>
+              <select
+                id="processingViewMode"
+                className="ui-select"
+                value={settings.processingViewMode || 'minimize'}
+                onChange={(e) => onSettingsChange({ processingViewMode: e.target.value })}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #e0e0e0',
+                  backgroundColor: '#fff',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  minWidth: '150px'
+                }}
+              >
+                <option value="hidden">🚫 Oculto - Sem indicadores</option>
+                <option value="minimize">📦 Minimizado - Apenas ícone</option>
+                <option value="compact">📊 Compacto - Info básica</option>
+                <option value="full">📈 Completo - Todos detalhes</option>
+              </select>
+            </div>
+
+            <div className="ui-setting-item">
+              <div className="ui-setting-info">
+                <label htmlFor="messageViewMode">
+                  Modo de Mensagens
+                </label>
+                <p className="ui-setting-description">
+                  Nível de detalhes nas mensagens do chat
+                </p>
+              </div>
+              <select
+                id="messageViewMode"
+                className="ui-select"
+                value={settings.messageViewMode || 'standard'}
+                onChange={(e) => onSettingsChange({ messageViewMode: e.target.value })}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #e0e0e0',
+                  backgroundColor: '#fff',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  minWidth: '150px'
+                }}
+              >
+                <option value="minimal">💬 Mínimo - Apenas texto</option>
+                <option value="standard">📝 Padrão - Com metadados</option>
+                <option value="detailed">📋 Detalhado - Info completa</option>
+                <option value="developer">🔧 Developer - Debug mode</option>
+              </select>
+            </div>
+          </div>
+
           {/* Seção Visualização */}
           <div className="ui-settings-section">
-            <h3>📊 VISUALIZAÇÃO</h3>
+            <h3>📊 OPÇÕES DE VISUALIZAÇÃO</h3>
             
             <div className="ui-setting-item">
               <div className="ui-setting-info">

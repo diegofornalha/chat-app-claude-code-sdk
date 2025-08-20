@@ -1,0 +1,283 @@
+{
+  "description": "Mensagens de exemplo para testes do sistema de filas",
+  "version": "1.0.0",
+  "samples": {
+    "basic_messages": [
+      {
+        "id": "basic-1",
+        "type": "send_message",
+        "messageData": {
+          "message": "Olá, como você está hoje?",
+          "sessionId": "session-basic-1"
+        },
+        "priority": "normal",
+        "description": "Mensagem básica de saudação"
+      },
+      {
+        "id": "basic-2", 
+        "type": "send_message",
+        "messageData": {
+          "message": "Pode me ajudar com um problema de código JavaScript?",
+          "sessionId": "session-basic-2"
+        },
+        "priority": "normal",
+        "description": "Pergunta sobre programação"
+      },
+      {
+        "id": "basic-3",
+        "type": "send_message",
+        "messageData": {
+          "message": "Explique o conceito de closures em JavaScript",
+          "sessionId": "session-basic-3"
+        },
+        "priority": "normal", 
+        "description": "Pergunta conceitual"
+      }
+    ],
+    "priority_messages": [
+      {
+        "id": "priority-1",
+        "type": "send_message",
+        "messageData": {
+          "message": "URGENTE: Sistema em produção apresentando erro crítico!",
+          "sessionId": "session-priority-1"
+        },
+        "priority": "high",
+        "description": "Mensagem urgente de alta prioridade"
+      },
+      {
+        "id": "priority-2",
+        "type": "send_message", 
+        "messageData": {
+          "message": "Revisão de código importante para deploy hoje",
+          "sessionId": "session-priority-2"
+        },
+        "priority": "high",
+        "description": "Revisão urgente de código"
+      }
+    ],
+    "context_messages": [
+      {
+        "id": "context-1",
+        "type": "send_message_with_context",
+        "messageData": {
+          "message": "Analise este código e sugira melhorias",
+          "sessionId": "session-context-1",
+          "context": {
+            "files": ["app.js", "utils.js"],
+            "projectType": "web-application",
+            "framework": "express.js"
+          }
+        },
+        "priority": "normal",
+        "description": "Mensagem com contexto de arquivos"
+      },
+      {
+        "id": "context-2",
+        "type": "send_message_with_context",
+        "messageData": {
+          "message": "Otimize esta consulta SQL",
+          "sessionId": "session-context-2", 
+          "context": {
+            "database": "postgresql",
+            "tableSize": "large",
+            "queryType": "complex-join"
+          }
+        },
+        "priority": "normal",
+        "description": "Mensagem com contexto de banco de dados"
+      }
+    ],
+    "a2a_messages": [
+      {
+        "id": "a2a-1",
+        "type": "a2a:send_message",
+        "messageData": {
+          "message": "Coordenar deployment entre microserviços",
+          "sessionId": "session-a2a-1",
+          "targetAgent": "deployment-coordinator",
+          "sourceAgent": "api-gateway"
+        },
+        "priority": "high",
+        "description": "Mensagem Agent-to-Agent para coordenação"
+      },
+      {
+        "id": "a2a-2",
+        "type": "a2a:send_message",
+        "messageData": {
+          "message": "Sincronizar dados entre sistemas",
+          "sessionId": "session-a2a-2",
+          "targetAgent": "data-sync-agent", 
+          "sourceAgent": "user-service"
+        },
+        "priority": "normal",
+        "description": "Mensagem A2A para sincronização"
+      }
+    ],
+    "long_messages": [
+      {
+        "id": "long-1",
+        "type": "send_message",
+        "messageData": {
+          "message": "Preciso de uma explicação detalhada sobre arquitetura de microserviços. Quero entender os benefícios, desvantagens, padrões de design, estratégias de deployment, monitoramento, logging, tratamento de falhas, comunicação entre serviços, descoberta de serviços, load balancing, circuit breakers, patterns como saga, CQRS, event sourcing, e como implementar tudo isso na prática usando Docker, Kubernetes, service mesh, API gateways, e ferramentas de observabilidade.",
+          "sessionId": "session-long-1"
+        },
+        "priority": "normal",
+        "description": "Mensagem longa e complexa"
+      }
+    ],
+    "error_inducing_messages": [
+      {
+        "id": "error-1",
+        "type": "invalid_message_type",
+        "messageData": {
+          "message": "Esta mensagem tem um tipo inválido",
+          "sessionId": "session-error-1"
+        },
+        "priority": "normal",
+        "description": "Mensagem com tipo inválido para testar tratamento de erro"
+      },
+      {
+        "id": "error-2",
+        "type": "send_message",
+        "messageData": {
+          "invalidField": "Esta mensagem tem campos inválidos",
+          "sessionId": "session-error-2"
+        },
+        "priority": "normal",
+        "description": "Mensagem com estrutura inválida"
+      }
+    ],
+    "batch_messages": [
+      {
+        "id": "batch-1",
+        "type": "send_message",
+        "messageData": {
+          "message": "Primeira mensagem do lote de testes",
+          "sessionId": "session-batch-1"
+        },
+        "priority": "normal",
+        "batchIndex": 1
+      },
+      {
+        "id": "batch-2", 
+        "type": "send_message",
+        "messageData": {
+          "message": "Segunda mensagem do lote de testes",
+          "sessionId": "session-batch-1"
+        },
+        "priority": "normal",
+        "batchIndex": 2
+      },
+      {
+        "id": "batch-3",
+        "type": "send_message",
+        "messageData": {
+          "message": "Terceira mensagem do lote de testes",
+          "sessionId": "session-batch-1"
+        },
+        "priority": "normal",
+        "batchIndex": 3
+      },
+      {
+        "id": "batch-4",
+        "type": "send_message",
+        "messageData": {
+          "message": "Quarta mensagem do lote de testes",
+          "sessionId": "session-batch-1"
+        },
+        "priority": "normal",
+        "batchIndex": 4
+      },
+      {
+        "id": "batch-5",
+        "type": "send_message",
+        "messageData": {
+          "message": "Quinta mensagem do lote de testes",
+          "sessionId": "session-batch-1"
+        },
+        "priority": "normal",
+        "batchIndex": 5
+      }
+    ],
+    "stress_test_messages": [
+      {
+        "id": "stress-template",
+        "type": "send_message",
+        "messageData": {
+          "message": "Mensagem de teste de stress número {INDEX}",
+          "sessionId": "session-stress-{INDEX}"
+        },
+        "priority": "normal",
+        "description": "Template para gerar múltiplas mensagens de stress test"
+      }
+    ]
+  },
+  "test_scenarios": {
+    "scenario_1_basic_queue": {
+      "name": "Teste Básico de Fila",
+      "description": "Testar funcionalidade básica de enqueue e dequeue",
+      "messages": ["basic-1", "basic-2", "basic-3"],
+      "expected_order": [1, 2, 3],
+      "timeout": 30000
+    },
+    "scenario_2_priority": {
+      "name": "Teste de Prioridade",
+      "description": "Testar se mensagens de alta prioridade são processadas primeiro",
+      "messages": ["basic-1", "priority-1", "basic-2"],
+      "expected_order": [2, 1, 3],
+      "timeout": 30000
+    },
+    "scenario_3_mixed_types": {
+      "name": "Teste de Tipos Mistos",
+      "description": "Testar diferentes tipos de mensagem",
+      "messages": ["basic-1", "context-1", "a2a-1"],
+      "expected_order": [3, 1, 2],
+      "timeout": 45000
+    },
+    "scenario_4_error_handling": {
+      "name": "Teste de Tratamento de Erro",
+      "description": "Testar como o sistema lida com mensagens inválidas",
+      "messages": ["basic-1", "error-1", "basic-2"],
+      "expected_errors": ["error-1"],
+      "timeout": 30000
+    },
+    "scenario_5_batch_processing": {
+      "name": "Teste de Processamento em Lote", 
+      "description": "Testar processamento de múltiplas mensagens",
+      "messages": ["batch-1", "batch-2", "batch-3", "batch-4", "batch-5"],
+      "expected_order": [1, 2, 3, 4, 5],
+      "timeout": 60000
+    },
+    "scenario_6_stress_test": {
+      "name": "Teste de Stress",
+      "description": "Testar o sistema sob alta carga",
+      "message_template": "stress-template",
+      "message_count": 50,
+      "timeout": 120000
+    }
+  },
+  "queue_limits": {
+    "max_queue_size": 100,
+    "message_timeout": 300000,
+    "max_concurrent_processing": 1,
+    "retry_attempts": 3,
+    "retry_delay": 1000
+  },
+  "validation_rules": {
+    "message_structure": {
+      "required_fields": ["type", "messageData"],
+      "optional_fields": ["priority"],
+      "valid_types": [
+        "send_message",
+        "send_message_with_context", 
+        "a2a:send_message"
+      ],
+      "valid_priorities": ["normal", "high"]
+    },
+    "messageData_structure": {
+      "required_fields": ["message"],
+      "optional_fields": ["sessionId", "context", "targetAgent", "sourceAgent"]
+    }
+  }
+}

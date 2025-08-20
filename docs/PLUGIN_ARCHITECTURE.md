@@ -99,13 +99,13 @@ module.exports = MyPlugin;
 
 ```bash
 # Listar plugins
-curl http://localhost:3001/api/plugins
+curl http://localhost:8080/api/plugins
 
 # Habilitar plugin
-curl -X POST http://localhost:3001/api/plugins/example-plugin/enable
+curl -X POST http://localhost:8080/api/plugins/example-plugin/enable
 
 # Desabilitar plugin
-curl -X POST http://localhost:3001/api/plugins/crew-ai/disable
+curl -X POST http://localhost:8080/api/plugins/crew-ai/disable
 ```
 
 ## 🔄 Migração dos Agentes Removidos
@@ -120,7 +120,7 @@ Estes agentes foram removidos do código core e agora podem ser instalados como 
 
 2. **Habilitar quando necessário:**
    ```bash
-   curl -X POST http://localhost:3001/api/plugins/crew-ai-plugin/enable
+   curl -X POST http://localhost:8080/api/plugins/crew-ai-plugin/enable
    ```
 
 ## ✨ Benefícios

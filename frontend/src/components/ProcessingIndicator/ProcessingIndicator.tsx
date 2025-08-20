@@ -14,22 +14,27 @@ interface ProcessingIndicatorProps {
   showDetails: boolean;
   autoExpand: boolean;
   animationsEnabled: boolean;
+  viewMode?: 'minimize' | 'compact' | 'full' | 'hidden';
 }
 
 export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
   steps,
   showDetails,
   autoExpand,
-  animationsEnabled
+  animationsEnabled,
+  viewMode = 'minimize'
 }) => {
-  const [expanded, setExpanded] = useState(autoExpand);
-  const [minimized, setMinimized] = useState(false);
+  const [expanded, setExpanded] = useState(false); // Iniciar colapsado
+  const [minimized, setMinimized] = useState(viewMode === 'minimize'); // Baseado no viewMode
   
   useEffect(() => {
-    setExpanded(autoExpand);
-  }, [autoExpand]);
+    setExpanded(autoExpand || viewMode === 'full');
+    setMinimized(viewMode === 'minimize');
+  }, [autoExpand, viewMode]);
 
-  if (!showDetails || steps.length === 0) {
+  if (!showDetails || steps.length === 0 || viewMode === 'hidden') {
+    if (viewMode === 'hidden') return null;
+    
     // Modo simples - apenas indicador de processamento
     return (
       <div className={`processing-simple ${animationsEnabled ? 'animated' : ''}`}>
@@ -82,7 +87,31 @@ export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
     return items;
   };
 
-  if (minimized) {
+  // Modo compacto - sem possibilidade de expandir
+  if (viewMode === 'compact') {
+    return (
+      <div className="processing-container compact-mode">
+        <div className="processing-header">
+          <div className="processing-title">
+            <span className="processing-icon">
+              {getStepEmoji(currentStep.step)}
+            </span>
+            <span className="processing-current">
+              {typeof currentStep.message === 'string' ? currentStep.message : JSON.stringify(currentStep.message)}
+            </span>
+          </div>
+        </div>
+        {animationsEnabled && (
+          <div className="processing-animation">
+            <div className="processing-pulse"></div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Modo minimizado - pode expandir para full
+  if (minimized && viewMode === 'minimize') {
     return (
       <div 
         className="processing-minimized"
@@ -92,7 +121,7 @@ export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
           {getStepEmoji(currentStep.step)}
         </div>
         <span className="processing-minimized-text">
-          {currentStep.message}
+          {typeof currentStep.message === 'string' ? currentStep.message : JSON.stringify(currentStep.message)}
         </span>
         <button className="processing-expand-btn">
           ↕
@@ -109,7 +138,7 @@ export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
             {getStepEmoji(currentStep.step)}
           </span>
           <span className="processing-current">
-            {currentStep.message}
+            {typeof currentStep.message === 'string' ? currentStep.message : JSON.stringify(currentStep.message)}
           </span>
         </div>
         <div className="processing-controls">
